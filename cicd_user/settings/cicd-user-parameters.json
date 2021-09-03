@@ -1,0 +1,18 @@
+[
+    {
+        "ParameterKey": "Service",
+        "ParameterValue": "iamdir"
+    },
+    {
+        "ParameterKey": "Function",
+        "ParameterValue": "vds"
+    },
+    {
+        "ParameterKey": "Landscape",
+        "ParameterValue": "nprod"
+    },
+    {
+        "ParameterKey":  "Ticket",
+        "ParameterValue": "PRJ0027539"
+    }
+] 
