@@ -16,7 +16,7 @@ from datetime import datetime
 #
 # Wait for something to complete by periodically asking status (and printing it out so you know what is happening)
 #
-def run_cloudformation(cmdstring="", wait=False):
+def run_cloudformation(cmdstring="", wait=False, region="us-east-1"):
     # Run the given command and optionally wait until describe-stacks shows COMPLETE
     result = subprocess.run(cmdstring, stdout=subprocess.PIPE, shell=True, universal_newlines=True)
     command_output = ''
@@ -39,7 +39,7 @@ def run_cloudformation(cmdstring="", wait=False):
         return 1
 
     # Query status of stack until we get a COMPLETE output..
-    check_command = "aws cloudformation describe-stacks --stack-name '{}'".format(aws_output['StackId'])
+    check_command = "aws cloudformation describe-stacks --region {} --stack-name '{}'".format(region,aws_output['StackId'])
     print(check_command)
     StackStatus=''
     while (True):
@@ -83,6 +83,7 @@ parser = argparse.ArgumentParser(description='Maintain various stacks at AWS. Ha
 if command != 'delete-stack':
     parser.add_argument('--template', type=argparse.FileType('r'), help='Stack template (if not specified assumes main.yaml in $CWD or parent)')
     parser.add_argument('--iam', action='store_true',              help='Use IAM security credentials')
+    parser.add_argument('--namediam', action='store_true',              help='Use IAM security credentials')
 parser.add_argument('JSONfile', nargs=1, type=argparse.FileType('r'), help='JSON parameters file for overriding template')
 parser.add_argument('--profile', type=str, default='default',         help='AWS profile to use')
 parser.add_argument('--stackname', type=str,                          help='Name of stack, normally determined from JSON filename but can override here')
@@ -100,9 +101,11 @@ profile = args.profile
 if command != 'delete-stack':
     template=args.template
     iam = args.iam
+    namediam = args.namediam
 else:
     template = ''
     iam = False
+    namediam = False
 stackname = args.stackname
 region = args.region
 extra = args.extra
@@ -147,6 +150,11 @@ if (iam == False):
 else:
     iam = "--capabilities CAPABILITY_IAM"
 
+if (namediam == False):
+    namediam = ''
+else:
+    namediam = "--capabilities CAPABILITY_NAMED_IAM"
+
 if command != 'delete-stack':
     cmdstring = "aws cloudformation {} --profile {} --region {} --stack-name {} --template-body file://{} --parameters file://{} {} {}".format(
         command,
@@ -156,6 +164,7 @@ if command != 'delete-stack':
         template,
         JSONfile.name,
         iam,
+        namediam,
         extra
     )
 else:
@@ -194,7 +203,7 @@ if wait:
 # Actually run the command now
 if not noop:
     if not wait_only:
-        rc = run_cloudformation(cmdstring=cmdstring,wait=wait)
+        rc = run_cloudformation(cmdstring=cmdstring,wait=wait,region=region)
         if (rc != 0):
             # run_cloudformation() will have output error message, OK to just exit here.
             exit(rc)
