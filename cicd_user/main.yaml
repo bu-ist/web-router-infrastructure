@@ -115,6 +115,7 @@ Resources:
                 - iam:Get*
                 - iam:CreateServiceLinkedRole
                 - lambda:*
+                - route53:*
                 - sts:GetCallerIdentity
                 Resource: "*"
               - Effect: Allow
