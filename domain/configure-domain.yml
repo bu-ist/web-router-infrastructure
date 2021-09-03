@@ -1,0 +1,25 @@
+---
+
+- name: "Configure the "
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    # override the following with -e aws_profile=x if you want something other than default
+    aws_profile: default
+
+  tasks:
+
+    - name: "Include our custom domain configurations"
+      include_vars:
+        file: "{{ item }}"
+      with_first_found:
+        - custom-domains.yml
+
+    - name: "Domain configuration"
+      include_tasks:
+        file: "domain-cloudfront.yml"
+      loop_control:
+        loop_var: domain
+      loop: "{{ custom_domains }}"

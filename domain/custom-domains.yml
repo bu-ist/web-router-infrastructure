@@ -1,0 +1,19 @@
+---
+
+custom_domains:
+
+  - name: "fred.bu.edu"
+    type: redirect
+    email: dsmk@bu.edu
+    servicenow: PRJxxxx
+    last_acknowledge: "2021-09-03"
+
+  # - name: "test-domain-redirect.bu.edu"
+  #   san: "test-domain-redirects.bu.edu"
+
+  - name: "dsmk2a.bu.edu"
+    san: "dsmk2b.bu.edu dsmk2c.bu.edu"
+    type: redirect
+    email: dsmk@bu.edu
+    servicenow: PRJxxxx
+    last_acknowledge: "2021-09-03"

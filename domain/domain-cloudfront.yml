@@ -1,0 +1,32 @@
+---
+
+- name: "{{ domain.name }}: get current certificate state"
+  community.aws.aws_acm_info:
+    domain_name: "{{ domain.name }}"
+    profile: "{{ aws_profile }}"
+  register: domain_info
+
+- name: "{{ domain.name }}: get status from certificate state"
+  register: cert_status
+  set_fact:
+    status: "{{ domain_info.certificates[0].status |default('UNKNOWN') }}"
+    certificate_arn: "{{ domain_info.certificates[0].certificate_arn |default('') }}"
+    sans: "{{ domain.san |default('') }}"
+    stack_name: "domain-{{ domain.name |replace('.','-') }}"
+
+# - debug:
+#     var: "domain_info.certificates[0]"
+
+- name: "{{ domain.name }}: check the stack state"
+  when: status == 'ISSUED'
+  amazon.aws.cloudformation:
+    profile: "{{ aws_profile }}"
+    stack_name: "{{ stack_name }}"
+    state: present
+    template: "../cloudfront-domain/main.yaml"
+    template_parameters:
+      Alias: "{{ domain.name }}"
+      WebACL: "203fb8d8-2300-4c2f-ba62-68c8a159ac34"
+      RoutingOriginDNS: "buaws-webrouter-syst-alb-879118417.us-east-1.elb.amazonaws.com"
+      SSLCertificateArn: "{{ certificate_arn }}"
+      LogBucket: "buaws-webrouter-base-syst-logbucket-7d3thxkupm79.s3.amazonaws.com"

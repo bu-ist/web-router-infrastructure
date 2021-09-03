@@ -1,0 +1,56 @@
+---
+
+- name: "{{ domain.name }}: get current certificate state"
+  community.aws.aws_acm_info:
+    domain_name: "{{ domain.name }}"
+    profile: "{{ aws_profile }}"
+  register: domain_info
+
+- name: "{{ domain.name }}: get status from certificate state"
+  changed_when: status != 'ISSUED'
+  set_fact:
+    status: "{{ domain_info.certificates[0].status |default('UNKNOWN') }}"
+    sans: "{{ domain.san |default('') }}"
+
+- name: "{{ domain.name }}: Request certificate if necessary"
+  when: "status == 'UNKNOWN' "
+  register: request_certificate
+  shell:
+    cmd: "aws acm --profile '{{ aws_profile }}' request-certificate --domain-name '{{ domain.name }}' --validation-method DNS {{ '--subject-alternative-names' if sans != '' else '' }} {{ sans }} ; sleep 5"
+    # argv:
+    #   # - echo
+    #   - aws
+    #   - acm
+    #   - request-certificate
+    #   - "--domain-name"
+    #   - "{{ domain.name }}"
+    #   - "--validation-method"
+    #   - "DNS"
+    #   - "{{ '--subject-alternative-names' if sans != '' else '' }}"
+    #   - "{{ sans }}"
+
+- name: "{{ domain.name }}: get more certificate info"
+  community.aws.aws_acm_info:
+    domain_name: "{{ domain.name }}"
+    profile: "{{ aws_profile }}"
+  register: domain_info
+
+# - debug:
+#     var: "domain_info.certificates[0].domain_validation_options"
+
+- name: "{{ domain.name }}: set local variables with status"
+  set_fact:
+    status: "{{ domain_info.certificates[0].status |default('UNKNOWN') }}"
+    method: "{{ domain_info.certificates[0].domain_validation_options[0].validation_method |default('NONE') }}"
+    dns_record: "{{ domain_info.certificates[0].domain_validation_options[0].resource_record |default({}) }}"
+    validation: "{{ domain_info.certificates[0].domain_validation_options |default([]) }}"
+
+- name: "{{ domain.name }}: output the DNS requests that need to be made"
+  when: item.validation_status == 'PENDING_VALIDATION'
+  debug:
+    msg:
+      - "domain: {{ item.validation_domain }}"
+      - "dns name: {{ item.resource_record.name |default('(pending, run command again)') }}"
+      - "type: {{ item.resource_record.type |default('(pending, run command again)') }}"
+      - "value: {{ item.resource_record.value |default('(pending, run command again)') }}"
+  loop: "{{ validation }}"
