@@ -39,7 +39,7 @@ def run_cloudformation(cmdstring="", wait=False, region="us-east-1"):
         return 1
 
     # Query status of stack until we get a COMPLETE output..
-    check_command = "aws cloudformation describe-stacks --region {} --stack-name '{}'".format(region,aws_output['StackId'])
+    check_command = "aws cloudformation --profile {} describe-stacks --region {} --stack-name '{}'".format(profile,region,aws_output['StackId'])
     print(check_command)
     StackStatus=''
     while (True):
