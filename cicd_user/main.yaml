@@ -85,8 +85,13 @@ Resources:
               - Effect: Allow
                 Action: 
                 - iam:GetUser
+                - iam:ListAccessKeys
+                - iam:CreateAccessKey
+                - iam:DeleteAccessKey
+                - iam:GetAccessKeyLastUsed
+                - iam:UpdateAccessKey
                 Resource:
-                - !Sub 'arn:aws:iam:::user/${AccountName}'
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:user/${AccountName}'
               - Effect: Allow
                 Action:
                 - lambda:*
