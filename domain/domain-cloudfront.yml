@@ -19,6 +19,7 @@
 
 - name: "{{ domain.name }}: check the stack state"
   when: status == 'ISSUED'
+  register: cloudfront_cf
   amazon.aws.cloudformation:
     profile: "{{ aws_profile }}"
     stack_name: "{{ stack_name }}"
@@ -29,4 +30,11 @@
       WebACL: "203fb8d8-2300-4c2f-ba62-68c8a159ac34"
       RoutingOriginDNS: "buaws-webrouter-syst-alb-879118417.us-east-1.elb.amazonaws.com"
       SSLCertificateArn: "{{ certificate_arn }}"
+      RedirectToHttps: 'false'
       LogBucket: "buaws-webrouter-base-syst-logbucket-7d3thxkupm79.s3.amazonaws.com"
+
+- name: "{{ domain.name }}: If check then show the debug info on what the stack would do"
+  when: cloudfront_cf.changed and ansible_check_mode
+  changed_when: true
+  debug:
+    var: "cloudfront_cf.meta"
