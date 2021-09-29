@@ -4,19 +4,7 @@
     "ParameterValue": "domain-name"
   },
   {
-    "ParameterKey": "WebACL",
-    "ParameterValue": "203fb8d8-2300-4c2f-ba62-68c8a159ac34"
-  },
-  {
-    "ParameterKey": "RoutingOriginDNS",
-    "ParameterValue": "buaws-webrouter-syst-alb-879118417.us-east-1.elb.amazonaws.com"
-  },
-  {
     "ParameterKey": "SSLCertificateArn",
     "ParameterValue": "certificate-arn-from-step-1"
-  },
-  {
-    "ParameterKey": "LogBucket",
-    "ParameterValue": "buaws-webrouter-base-syst-logbucket-7d3thxkupm79.s3.amazonaws.com"
   }
 ]
