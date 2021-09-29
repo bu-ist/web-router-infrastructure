@@ -1,11 +1,11 @@
 [
   {
     "ParameterKey": "Alias",
-    "ParameterValue": "fred.bu.edu"
+    "ParameterValue": "fred.rexden.us,fred2.rexden.us"
   },
   {
     "ParameterKey": "WebACL",
-    "ParameterValue": "203fb8d8-2300-4c2f-ba62-68c8a159ac34"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "RoutingOriginDNS",
@@ -13,7 +13,7 @@
   },
   {
     "ParameterKey": "SSLCertificateArn",
-    "ParameterValue": "certificate/c488ab67-6ffc-4992-8453-d9233c9e0ab5"
+    "ParameterValue": "certificate/e6f47d31-2444-4afc-a438-79c1efb25da2"
   },
   {
     "ParameterKey": "LogBucket",
