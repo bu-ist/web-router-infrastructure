@@ -1,0 +1,14 @@
+[
+        {
+          "ParameterKey":  "HostedZoneDomain",
+          "ParameterValue": "webrouter-nprd.aws-cloud.bu.edu"
+        },
+        {
+          "ParameterKey": "HostedZoneComment",
+          "ParameterValue": "DNS zone for WebRouter related services."
+        },
+        {
+          "ParameterKey": "Landscape",
+          "ParameterValue": "nonprod"
+        }
+]
