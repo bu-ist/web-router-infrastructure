@@ -30,6 +30,14 @@ Parameters:
   DockerImage:
     Type: String
     Default: "bufe-buedu"
+  HostedZoneId:
+    Description: "The Route53 Hosted Zone id.  If present then this will create a Route53 record pointing to the ALB along with an Amazon managed certificate"
+    Type: String
+    Default: ""
+  HostedZoneName:
+    Description: "The Route53 Hosted Zone name.  This will be used for building the domain names."
+    Type: String
+    Default: ""
   PublicAlbAcmCertificate:
     AllowedPattern: ^$|(arn:aws:acm:)([a-z0-9/:-])*([a-z0-9])$
     Description: '[ Optional ] The AWS Certification Manager certificate ARN for the ALB certificate - this certificate should be created in the region you wish to run the ALB and must reference the WordPress domain name you use below.'
@@ -137,6 +145,8 @@ Resources:
         DesiredCapacity: !Sub "${DesiredCapacity}"
         MinSize: !Sub "${MinSize}"
         MaxSize: !Sub "${MaxSize}"
+        HostedZoneId: !Ref HostedZoneId
+        HostedZoneName: !Ref HostedZoneName
         InstanceType: !Ref "InstanceType"
 
   WebRouterService:
@@ -146,7 +156,7 @@ Resources:
       Parameters:
         RouterImage: !If
           - DoDefaultImageCondition
-          - "Fn::ImportValue": !Sub "${Prefix}-container-repository-uri" 
+          - "Fn::ImportValue": !Sub "${Prefix}-container-repository-uri"
           - !Ref "RouterImage"
         Prefix: !Sub "${Prefix}"
         Landscape: !Sub "${Landscape}"
