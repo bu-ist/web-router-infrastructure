@@ -145,7 +145,10 @@ Resources:
     Type : AWS::ElasticLoadBalancingV2::Listener
     Properties:
       Certificates:
-      - CertificateArn: !Ref LBCertificate
+      - CertificateArn: !If
+        - SslCertificate
+        - !Ref PublicAlbAcmCertificate
+        - !Ref LBCertificate
       DefaultActions:
       - Type: forward
         TargetGroupArn: !Ref WebRouterTG443
@@ -202,7 +205,7 @@ Resources:
       VpcId:
         "Fn::ImportValue": !Sub "${VpcPrefix}-VPCID"
   WebRouterTG443:
-    Condition: SslCertificate
+    # Condition: SslCertificate
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: WebRouterALB
     Properties:
@@ -372,7 +375,7 @@ Outputs:
     Export:
       Name: !Sub "${Prefix}-is-targetgroup443"
   Port443TargetGroup:
-    Condition: SslCertificate
+    # Condition: SslCertificate
     Value: !Ref WebRouterTG443
     Export:
       Name: !Sub "${Prefix}-targetgroup443-arn"
