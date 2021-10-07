@@ -74,6 +74,9 @@ Conditions:
     !Equals [ '', !Ref 'PublicAlbAcmCertificate' ]
   IsHostedZone:
     !Not [ !Equals [ '', !Ref HostedZoneId ] ]
+  DoPort443: !Or
+    - !Condition SslCertificate
+    - !Condition IsHostedZone
 Mappings:
   # The location for this info is:
   # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI_launch_latest.html
@@ -141,7 +144,7 @@ Resources:
       SecurityGroups:
       - "Fn::ImportValue": !Sub "${Prefix}-loadbalancer-sg"
   WebRouterListener443:
-    Condition: IsHostedZone
+    Condition: DoPort443
     Type : AWS::ElasticLoadBalancingV2::Listener
     Properties:
       Certificates:
@@ -156,7 +159,7 @@ Resources:
       Port: 443
       Protocol: HTTPS
   WebRouterListener443Rule:
-    Condition: IsHostedZone
+    Condition: DoPort443
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     DependsOn: WebRouterListener80
     Properties:
@@ -205,7 +208,7 @@ Resources:
       VpcId:
         "Fn::ImportValue": !Sub "${VpcPrefix}-VPCID"
   WebRouterTG443:
-    # Condition: SslCertificate
+    Condition: DoPort443
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: WebRouterALB
     Properties:
@@ -369,13 +372,21 @@ Outputs:
       Name: !Sub "${Prefix}-test-logs-group"
   IsSSL:
     Value: !If
-      - SslCertificate
+      - DoPort443
       - 'true'
       - 'false'
     Export:
       Name: !Sub "${Prefix}-is-targetgroup443"
+  AlbCertificateArn:
+    Condition: DoPort443
+    Value: !If
+      - SslCertificate
+      - !Ref PublicAlbAcmCertificate
+      - !Ref LBCertificate
+    Export:
+      Name: !Sub "${Prefix}-alb-certificate-arn"
   Port443TargetGroup:
-    # Condition: SslCertificate
+    Condition: DoPort443
     Value: !Ref WebRouterTG443
     Export:
       Name: !Sub "${Prefix}-targetgroup443-arn"
@@ -384,6 +395,9 @@ Outputs:
     Export:
       Name: !Sub "${Prefix}-targetgroup80-arn"
   WebRouterALBDNS:
-    Value: !GetAtt [ WebRouterALB, DNSName]
+    Value: !If
+      - IsHostedZone
+      - !Ref DomainRecordSet
+      - !GetAtt [ WebRouterALB, DNSName]
     Export:
       Name: !Sub "${Prefix}-buedu-alb-dnsname"

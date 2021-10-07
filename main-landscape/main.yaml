@@ -160,7 +160,7 @@ Resources:
           - !Ref "RouterImage"
         Prefix: !Sub "${Prefix}"
         Landscape: !Sub "${Landscape}"
-        PublicAlbAcmCertificate: !Sub "${PublicAlbAcmCertificate}"
+        PublicAlbAcmCertificate: !GetAtt [ "EcsStack", "Outputs.AlbCertificateArn" ]
         ECSCluster: !GetAtt [ "EcsStack", "Outputs.ECSCluster" ]
         CloudwatchLogsGroup: !GetAtt [ "EcsStack", "Outputs.CloudwatchLogsGroup" ]
         Port80TargetGroup: !GetAtt [ "EcsStack", "Outputs.Port80TargetGroup" ]
@@ -183,7 +183,7 @@ Resources:
         GitHubRepo: !Sub "${GitHubRepo}"
         GitHubBranch: !Sub "${GitHubBranch}"
         GitHubUser: !Sub "${GitHubUser}"
-        PublicAlbAcmCertificate: !Sub "${PublicAlbAcmCertificate}"
+        PublicAlbAcmCertificate: !GetAtt [ "EcsStack", "Outputs.AlbCertificateArn" ]
         ECSCluster: !GetAtt [ "EcsStack", "Outputs.ECSCluster" ]
         Port80Service: !GetAtt [ "WebRouterService", "Outputs.Port80Service" ]
         Port443Service: !GetAtt [ "WebRouterService", "Outputs.Port443Service" ]
