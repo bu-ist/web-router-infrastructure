@@ -30,6 +30,14 @@ Parameters:
   DockerImage:
     Type: String
     Default: "bufe-buedu"
+  UseLegacyNames:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Choose either true or false
+    Default: true
+    Description: "If true then we will use legacy names for resources"
+    Type: String
   HostedZoneId:
     Description: "The Route53 Hosted Zone id.  If present then this will create a Route53 record pointing to the ALB along with an Amazon managed certificate"
     Type: String
@@ -148,6 +156,7 @@ Resources:
         HostedZoneId: !Ref HostedZoneId
         HostedZoneName: !Ref HostedZoneName
         InstanceType: !Ref "InstanceType"
+        UseLegacyNames: !Ref UseLegacyNames
 
   WebRouterService:
     Type: AWS::CloudFormation::Stack

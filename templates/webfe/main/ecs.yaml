@@ -16,6 +16,14 @@ Parameters:
   DockerImage:
     Type: String
     Default: "bufe-buedu"
+  UseLegacyNames:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Choose either true or false
+    Default: true
+    Description: "If true then we will use legacy names for resources"
+    Type: String
   HostedZoneId:
     Description: "The Route53 Hosted Zone id.  If present then this will create a Route53 record pointing to the ALB along with an Amazon managed certificate"
     Type: String
@@ -77,6 +85,8 @@ Conditions:
   DoPort443: !Or
     - !Condition SslCertificate
     - !Condition IsHostedZone
+  UseLegacyNames:
+    !Equals [ "true", !Ref 'UseLegacyNames' ]
 Mappings:
   # The location for this info is:
   # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI_launch_latest.html
@@ -133,7 +143,10 @@ Resources:
   WebRouterALB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub "${Prefix}-alb"
+      Name: !If
+        - UseLegacyNames
+        - !Sub "${Landscape}-webrouter-alb"
+        - !Sub "${Prefix}-alb"
       Scheme: internet-facing
       LoadBalancerAttributes:
       - Key: idle_timeout.timeout_seconds
@@ -201,7 +214,10 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
-      Name: !Sub "${Prefix}-p80-tg"
+      Name: !If
+        - UseLegacyNames
+        - !Sub "${Landscape}-webrouter-p80-tg"
+        - !Sub "${Prefix}-p80-tg"
       Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 2
@@ -217,7 +233,10 @@ Resources:
       HealthCheckProtocol: HTTPS
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
-      Name: !Sub "${Prefix}-p443-tg"
+      Name: !If
+        - UseLegacyNames
+        - !Sub "${Landscape}-webrouter-p443-tg"
+        - !Sub "${Prefix}-p443-tg"
       Port: 443
       Protocol: HTTPS
       UnhealthyThresholdCount: 2
