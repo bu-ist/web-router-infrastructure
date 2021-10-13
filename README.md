@@ -20,37 +20,39 @@ process SSL traffic during the transition.  Replace `<landscape>` with the appro
 | test | buaws-web2cloud-nonprod | Z0022698234MMVVFBQQN3 | webrouter-nprd.aws-cloud.bu.edu | cloudfront-test/settings/buaws-site-www-test-bu-edu-parameters.json |
 | prod | buaws-websites-prod | Z10323963VM5EBHR1LN4Q | webrouter-prd.aws-cloud.bu.edu | cloudfront/settings/buaws-site-www-bu-edu-parameters.json |
 
-1. Copy the various CloudFormation templates to the appropriate bucket:
+1. Double check that the www*.bu.edu address is working properly before starting.
+
+2. Copy the various CloudFormation templates to the appropriate bucket:
 
 ```bash
 $ ./deploy <profile-name> <cf-bucket-name> <landscape>
 ```
 
-2. Edit the CloudFormation parameter file for the main-landscape stack to have the Route53 subdomain for this account - 
+3. Edit the CloudFormation parameter file for the main-landscape stack to have the Route53 subdomain for this account - 
    see the table above for the HostedZoneId and HostedZoneName.  See `main-landscape/settings/buaws-webrouter-main-syst-parameters.json` for an example of including it.  Do not change the PublicAlbAcmCertificate parameter yet.
 
-3. Update the main-landscape CF stack using the following command:
+4. Update the main-landscape CF stack using the following command:
 
 ```bash
 $ ./update.py --profile <profile-name> main-landscape/settings/buaws-webrouter-main-<landscape>-parameters.json
 ```
 
-4.  Monitor the CloudFormation stack update using the AWS Web Console and confirm that the `www*.bu.edu` hostname
+5.  Monitor the CloudFormation stack update using the AWS Web Console and confirm that the `www*.bu.edu` hostname
     still works.  Once it is done you should be able to find a `webrouter-<landscape>.<HostedZoneName>` SSL
     certificate in Amazon's Certificate Manager (ACM) and it should have a status of Issued.
 
-5.  Go to the EC2 Web Console, find the appropriate landscape's LoadBalancer, select Listeners, and click on 
+6.  Go to the EC2 Web Console, find the appropriate landscape's LoadBalancer, select Listeners, and click on 
     "View/edit certificates" under the port 443 listener.  Manually add the new certificate to the certificate list
     by selecting the plus sign, click the check box next to the `webrouter-<landscape>.<HostedZoneName>`, and then click the "Add" button that appears under the plus sign.
 
-6.  Update the CloudFront CF parameter file (cloudfront-parameter-file above) changing the RoutingOriginDNS parameter to the 
+7.  Update the CloudFront CF parameter file (cloudfront-parameter-file above) changing the RoutingOriginDNS parameter to the 
     `webrouter-<landscape>.<HostedZoneName>` setting above.  Then update that stack using:
 
 ```bash
 $ ./update.py --profile <profile-name> <cloudfront-parameter-file>
 ```
 
-7.  Confirm that `www*.bu.edu` still works.  Once that is done then update the main-landscape CloudFormation parameter
+8.  Confirm that `www*.bu.edu` still works.  Once that is done then update the main-landscape CloudFormation parameter
     file changing the ParameterValue for PublicAlbAcmCertificate to an empty string ("").  This will cause the DEFAULT
     SSL certificate for the ALB to the new internal hostname.  This is deployed using:
 
@@ -58,6 +60,7 @@ $ ./update.py --profile <profile-name> <cloudfront-parameter-file>
 $ ./update.py --profile <profile-name> main-landscape/settings/buaws-webrouter-main-<landscape>-parameters.json
 ```
 
+9.  Remove the non-default SSL certificate manually using AWS web console.
 
 
 ## Building a Cloudfront virtual host
