@@ -4,7 +4,7 @@
     "ParameterValue": "domain-name"
   },
   {
-    "ParameterKey": "SSLCertificateArn",
-    "ParameterValue": "certificate-arn-from-step-1"
+    "ParameterKey": "SSLCertificateID",
+    "ParameterValue": "certificate-id-from-step-1"
   }
 ]
