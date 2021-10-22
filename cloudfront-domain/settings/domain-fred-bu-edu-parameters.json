@@ -12,8 +12,8 @@
     "ParameterValue": "webrouter-syst.webrouter-nprd.aws-cloud.bu.edu"
   },
   {
-    "ParameterKey": "SSLCertificateArn",
-    "ParameterValue": "certificate/c488ab67-6ffc-4992-8453-d9233c9e0ab5"
+    "ParameterKey": "SSLCertificateID",
+    "ParameterValue": "c488ab67-6ffc-4992-8453-d9233c9e0ab5"
   },
   {
     "ParameterKey": "LogBucket",
