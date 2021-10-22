@@ -82,7 +82,7 @@ Resources:
               - X-Upstream
             Cookies:
               Forward: all
-        Comment: !Sub "Custom Domain: ${Alias}"
+        Comment: !Sub "${Alias}"
         Enabled: true
         IPV6Enabled: false
         Logging:
