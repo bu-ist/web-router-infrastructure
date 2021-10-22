@@ -1,26 +1,10 @@
 [
   {
     "ParameterKey": "Alias",
-    "ParameterValue": "fred.rexden.us,fred2.rexden.us"
-  },
-  {
-    "ParameterKey": "WebACL",
-    "ParameterValue": ""
-  },
-  {
-    "ParameterKey": "RoutingOriginDNS",
-    "ParameterValue": "buaws-webrouter-syst-alb-879118417.us-east-1.elb.amazonaws.com"
+    "ParameterValue": "fred.rexden.us"
   },
   {
     "ParameterKey": "SSLCertificateArn",
-    "ParameterValue": "certificate/e6f47d31-2444-4afc-a438-79c1efb25da2"
-  },
-  {
-    "ParameterKey": "LogBucket",
-    "ParameterValue": "buaws-webrouter-base-syst-logbucket-7d3thxkupm79.s3.amazonaws.com"
-  },
-  {
-    "ParameterKey": "RedirectToHttps",
-    "ParameterValue": "false"
+    "ParameterValue": "certificate/6b49e08b-9454-4290-9e98-e20793264cca"
   }
 ]
