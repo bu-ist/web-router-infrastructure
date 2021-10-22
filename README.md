@@ -1,5 +1,10 @@
 ## Procedure for building the core infrastructure
 
+This repo contains the AWS Infrastructure configuration for the BU WebRouter service.  It is largely CloudFormation.
+
+The SOP for setting up Custom Domains can be found at:
+
+https://bushare.sharepoint.com/:w:/r/sites/ist/pm/support/other/Remove-AFS-WebLogin-Depend-Virtual-Web/docs/Procedure%20for%20Creating%20New%20Domains.docx?d=w832e99f8413946bfae4eb5302bd15a66&csf=1&web=1&e=kbxNDD
 
 ## Building a Cloudfront virtual host
 
