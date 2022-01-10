@@ -20,8 +20,16 @@
     "ParameterValue": "qa"
   },
   {
+    "ParameterKey": "HostedZoneId",
+    "ParameterValue": "Z0022698234MMVVFBQQN3"
+  },
+  {
+    "ParameterKey": "HostedZoneName",
+    "ParameterValue": "webrouter-nprd.aws-cloud.bu.edu"
+  },
+  {
     "ParameterKey": "PublicAlbAcmCertificate",
-    "ParameterValue": "arn:aws:acm:us-east-1:347521306307:certificate/bc063cb0-89fc-4dd8-93ed-703cc15b53bc"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "KeyName",
