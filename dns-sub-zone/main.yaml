@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Provisions DNS infrastructure for the WebRouter accounts.  Once done one needs to add the DNS details to aws-cloud.bu.edu'
+
+Parameters:
+  HostedZoneDomain:
+    Type: String
+  HostedZoneComment:
+    Type: String
+  Landscape:
+    Type: String
+
+Resources:
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref HostedZoneDomain
+      HostedZoneConfig: 
+        Comment: !Ref HostedZoneComment
+      HostedZoneTags:
+        - Key: Name
+          Value: !Ref HostedZoneDomain
+        - Key: Service
+          Value: net
+        - Key: Function
+          Value: DNS
+        - Key: Landscape
+          Value: !Ref 'Landscape'
+
+
+  # Certificate:
+  #   Type: AWS::CertificateManager::Certificate
+  #   Properties: 
+  #     DomainName: !Ref HostedZoneDomain
+  #     DomainValidationOptions:
+  #       - DomainName: !Ref HostedZoneDomain
+  #         ValidationDomain: "bu.edu"
+  #     ValidationMethod: EMAIL
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref HostedZoneDomain
+  #       - Key: Service
+  #         Value: net
+  #       - Key: Function
+  #         Value: DNS
+  #       - Key: Landscape
+  #         Value: !Ref 'Landscape'

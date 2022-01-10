@@ -30,6 +30,22 @@ Parameters:
   DockerImage:
     Type: String
     Default: "bufe-buedu"
+  UseLegacyNames:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Choose either true or false
+    Default: true
+    Description: "If true then we will use legacy names for resources"
+    Type: String
+  HostedZoneId:
+    Description: "The Route53 Hosted Zone id.  If present then this will create a Route53 record pointing to the ALB along with an Amazon managed certificate"
+    Type: String
+    Default: ""
+  HostedZoneName:
+    Description: "The Route53 Hosted Zone name.  This will be used for building the domain names."
+    Type: String
+    Default: ""
   PublicAlbAcmCertificate:
     AllowedPattern: ^$|(arn:aws:acm:)([a-z0-9/:-])*([a-z0-9])$
     Description: '[ Optional ] The AWS Certification Manager certificate ARN for the ALB certificate - this certificate should be created in the region you wish to run the ALB and must reference the WordPress domain name you use below.'
@@ -137,7 +153,10 @@ Resources:
         DesiredCapacity: !Sub "${DesiredCapacity}"
         MinSize: !Sub "${MinSize}"
         MaxSize: !Sub "${MaxSize}"
+        HostedZoneId: !Ref HostedZoneId
+        HostedZoneName: !Ref HostedZoneName
         InstanceType: !Ref "InstanceType"
+        UseLegacyNames: !Ref UseLegacyNames
 
   WebRouterService:
     Type: AWS::CloudFormation::Stack
@@ -146,11 +165,11 @@ Resources:
       Parameters:
         RouterImage: !If
           - DoDefaultImageCondition
-          - "Fn::ImportValue": !Sub "${Prefix}-container-repository-uri" 
+          - "Fn::ImportValue": !Sub "${Prefix}-container-repository-uri"
           - !Ref "RouterImage"
         Prefix: !Sub "${Prefix}"
         Landscape: !Sub "${Landscape}"
-        PublicAlbAcmCertificate: !Sub "${PublicAlbAcmCertificate}"
+        PublicAlbAcmCertificate: !GetAtt [ "EcsStack", "Outputs.AlbCertificateArn" ]
         ECSCluster: !GetAtt [ "EcsStack", "Outputs.ECSCluster" ]
         CloudwatchLogsGroup: !GetAtt [ "EcsStack", "Outputs.CloudwatchLogsGroup" ]
         Port80TargetGroup: !GetAtt [ "EcsStack", "Outputs.Port80TargetGroup" ]
@@ -173,7 +192,7 @@ Resources:
         GitHubRepo: !Sub "${GitHubRepo}"
         GitHubBranch: !Sub "${GitHubBranch}"
         GitHubUser: !Sub "${GitHubUser}"
-        PublicAlbAcmCertificate: !Sub "${PublicAlbAcmCertificate}"
+        PublicAlbAcmCertificate: !GetAtt [ "EcsStack", "Outputs.AlbCertificateArn" ]
         ECSCluster: !GetAtt [ "EcsStack", "Outputs.ECSCluster" ]
         Port80Service: !GetAtt [ "WebRouterService", "Outputs.Port80Service" ]
         Port443Service: !GetAtt [ "WebRouterService", "Outputs.Port443Service" ]
