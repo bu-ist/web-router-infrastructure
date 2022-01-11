@@ -106,13 +106,13 @@ Resources:
     Condition: IsHostedZone
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Sub "webrouter-${Landscape}.${HostedZoneName}"
+      DomainName: !Sub "${Prefix}.${HostedZoneName}"
       DomainValidationOptions:
-      - DomainName: !Sub "webrouter-${Landscape}.${HostedZoneName}"
+      - DomainName: !Sub "${Prefix}.${HostedZoneName}"
         HostedZoneId: !Ref HostedZoneId
       Tags:
         - Key: Name
-          Value: !Sub "webrouter-${Landscape}.${HostedZoneName}"
+          Value: !Sub "${Prefix}.${HostedZoneName}"
         - Key: Service
           Value: websites
         - Key: Function
@@ -124,9 +124,9 @@ Resources:
    Condition: IsHostedZone
    Type: 'AWS::Route53::RecordSet'
    Properties:
-    Comment: !Sub "WebRouter ALB: webrouter-${Landscape}.${HostedZoneName}"
+    Comment: !Sub "WebRouter ALB: ${Prefix}.${HostedZoneName}"
     HostedZoneId: !Ref HostedZoneId
-    Name: !Sub "webrouter-${Landscape}.${HostedZoneName}."
+    Name: !Sub "${Prefix}.${HostedZoneName}."
     ResourceRecords:
       - !GetAtt WebRouterALB.DNSName
     Type: CNAME
