@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "Prefix",
+    "ParameterValue": "buaws-webrouter-syst-blue"
+  },
+  {
+    "ParameterKey": "VpcPrefix",
+    "ParameterValue": "buaws-web2cloud-nonprod"
+  }
+]
