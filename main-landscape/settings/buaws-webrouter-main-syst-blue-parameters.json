@@ -45,11 +45,11 @@
   },
   {
     "ParameterKey": "GitHubUser",
-    "ParameterValue": "dsmk"
+    "ParameterValue": "webappsreadonly"
   },
   {
     "ParameterKey": "GitHubToken",
-    "ParameterValue": "da90c81e9d2ca0ec2b1b541329b877ead80981bd"
+    "ParameterValue": "{{resolve:secretsmanager:GitHubTokenSecret/WebRouter:SecretString:token}}"
   },
   {
     "ParameterKey": "DesiredServiceCapacity",

@@ -100,6 +100,29 @@ Based on the results of load testing we might want to switch ECS to ALBRequestCo
 to keep ~500-600 connections to each NGINX container which is well under the 1024 maximum NGINX is currently set to.
 This should only be done if load testing shows that this version does not work properly.
 
+## GitHub token
+
+We store the GitHub token as a secret in the AWS Secrets Manager.  There is one secret per account and you can check 
+if the secret is present by not getting an error when you do the following command:
+
+```bash
+$ aws --profile x secretsmanager get-secret-value --secret-id websites-webrouter/dockerhub-credentials --query SecretString
+aws --profile websites-prod secretsmanager get-secret-value  --secret-id  websites-webrouter-dockerhub-secret --query SecretString
+
+An error occurred (ResourceNotFoundException) when calling the GetSecretValue operation: Secrets Manager can't find the specified secret.
+```
+
+You can create a secret by creating a JSON file similar to `sample-secret.json` and doing the following command:
+
+```bash
+$ aws --profile x secretsmanager create-secret --name GitHubTokenSecret/WebRouter --secret-string file://github-token.json
+{
+    "ARN": "arn:aws:secretsmanager:us-east-1:acctid:secret:GitHubTokenSecret/WebRouter-Fue6rj",
+    "Name": "GitHubTokenSecret/WebRouter",
+    "VersionId": "cb05b4ea-ed64-4f72-8777-0eaf1f90f0b4"
+}
+```
+
 ## DockerHub login
 
 We store the DockerHub username and password as a secret in AWS Secrets Manager.  There is one secret per account and you can check
@@ -190,25 +213,7 @@ cp buaws-webrouter-main-dr-prod-parameters.json-bootstrap buaws-webrouter-main-d
 cd ../../
 ./create-stack.sh default us-west-2 main-landscape buaws-webrouter-main-dr-prod
 ```
-1. Validate CodePipeline:
-
-      a. Developer Tools > Codepipline > Pipelines in AWS Console.
-
-      b. select the codepipleline in question.  Example: `buaws-webrouter-main-dr-prod-Pipeline-6GHOZXVXZUI8-Pipeline-1JRMI59MW33P9`
-
-      c. If the Source Step failed:
-      - click the edit button at the top of the page.
-      - Click the edit Stage button under Edit: Source.
-      - Under App > github click the edit button (pencil and paper icon).
-      - Click the connect to GitHub button.
-
-            - repository: bu-ist/webrouter-prod
-            - branch: prod.
-            - Click Done.
-            - Click Save.
-
-
-1. Once that completes and the CodePipeline has run once successfully, Switch the stack back to the normal settings (default:latest) and do an update-stack.
+1. Once the CodePipeline has run once successfully, Switch the stack back to the normal settings (default:latest) and do an update-stack.
 
 ```bash
 # copy the orig file to the main parameter file
