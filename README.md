@@ -213,25 +213,7 @@ cp buaws-webrouter-main-dr-prod-parameters.json-bootstrap buaws-webrouter-main-d
 cd ../../
 ./create-stack.sh default us-west-2 main-landscape buaws-webrouter-main-dr-prod
 ```
-1. Validate CodePipeline:
-
-      a. Developer Tools > Codepipline > Pipelines in AWS Console.
-
-      b. select the codepipleline in question.  Example: `buaws-webrouter-main-dr-prod-Pipeline-6GHOZXVXZUI8-Pipeline-1JRMI59MW33P9`
-
-      c. If the Source Step failed:
-      - click the edit button at the top of the page.
-      - Click the edit Stage button under Edit: Source.
-      - Under App > github click the edit button (pencil and paper icon).
-      - Click the connect to GitHub button.
-
-            - repository: bu-ist/webrouter-prod
-            - branch: prod.
-            - Click Done.
-            - Click Save.
-
-
-1. Once that completes and the CodePipeline has run once successfully, Switch the stack back to the normal settings (default:latest) and do an update-stack.
+1. Once the CodePipeline has run once successfully, Switch the stack back to the normal settings (default:latest) and do an update-stack.
 
 ```bash
 # copy the orig file to the main parameter file
