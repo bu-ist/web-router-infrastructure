@@ -100,6 +100,29 @@ Based on the results of load testing we might want to switch ECS to ALBRequestCo
 to keep ~500-600 connections to each NGINX container which is well under the 1024 maximum NGINX is currently set to.
 This should only be done if load testing shows that this version does not work properly.
 
+## GitHub token
+
+We store the GitHub token as a secret in the AWS Secrets Manager.  There is one secret per account and you can check 
+if the secret is present by not getting an error when you do the following command:
+
+```bash
+$ aws --profile x secretsmanager get-secret-value --secret-id websites-webrouter/dockerhub-credentials --query SecretString
+aws --profile websites-prod secretsmanager get-secret-value  --secret-id  websites-webrouter-dockerhub-secret --query SecretString
+
+An error occurred (ResourceNotFoundException) when calling the GetSecretValue operation: Secrets Manager can't find the specified secret.
+```
+
+You can create a secret by creating a JSON file similar to `sample-secret.json` and doing the following command:
+
+```bash
+$ aws --profile x secretsmanager create-secret --name GitHubTokenSecret/WebRouter --secret-string file://github-token.json
+{
+    "ARN": "arn:aws:secretsmanager:us-east-1:acctid:secret:GitHubTokenSecret/WebRouter-Fue6rj",
+    "Name": "GitHubTokenSecret/WebRouter",
+    "VersionId": "cb05b4ea-ed64-4f72-8777-0eaf1f90f0b4"
+}
+```
+
 ## DockerHub login
 
 We store the DockerHub username and password as a secret in AWS Secrets Manager.  There is one secret per account and you can check
