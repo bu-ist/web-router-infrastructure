@@ -1,5 +1,9 @@
 ---
-
+# Ansible Tower default ansible is using Python 2.7 which is no longer supported the boto libraries that 
+# these collections use.  Therefore we are locking the version to the latest 2.7 compatible versions 
+#
 collections:
   - name: amazon.aws
+    version: "1.5.0"
   - name: community.aws
+    version: "1.5.0"
