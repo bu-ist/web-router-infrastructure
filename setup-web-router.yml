@@ -111,11 +111,12 @@
           UseLegacyNames: 'false'
           RouterImage: "{{ RouterImage |default('') }}"
 
-    - name: Debug CFUpdate
-      debug:
-        var: "main_update"
+    # - name: Debug CFUpdate
+    #   debug:
+    #     var: "main_update"
 
-    - name: Output the change set info
+    - name: Output the change set info if in check mode
+      when: ansible_check_mode
       tags:
         - cfonly
       debug:
