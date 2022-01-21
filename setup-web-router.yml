@@ -11,7 +11,11 @@
   vars:
 
     # if you need a different profile then add -e profile to the configuration
-    profile: default
+    # not currently using
+    #profile: default
+
+    # if you need a different region then add -e region to the command line (or Ansible Tower run)
+    region: us-east-1
 
   tasks:
 
@@ -32,6 +36,7 @@
         - s3only
       community.aws.s3_sync:
         bucket: "{{ template_bucket }}"
+        region: "{{ region }}"
         file_root: templates
         key_prefix: "{{ template_path }}"
 
@@ -40,6 +45,7 @@
         - base
       amazon.aws.cloudformation:
         stack_name: "{{ base_stack_name }}"
+        region: "{{ region }}"
         # region: "{{ region }}"
         state: present
         template: "base-landscape/main.yaml"
@@ -49,6 +55,7 @@
     - name: "Get the ECR name from the stack output"
       amazon.aws.cloudformation_info:
         stack_name: "{{ base_stack_name }}"
+        region: "{{ region }}"
       register: base_info
 
     - name: "Set variables based on the output"
@@ -56,7 +63,7 @@
         ecr_name: "{{ base_info.cloudformation[ base_stack_name ].stack_outputs.Repository }}"
 
     - name: "Changed when the ECR is empty"
-      command: "aws ecr list-images --query imageIds --repository-name {{ ecr_name }}"
+      command: "aws --region {{ region }} ecr list-images --query imageIds --repository-name {{ ecr_name }}"
       check_mode: false
       register: ecr_list_output
       changed_when: ecr_list_output.stdout == '[]'
@@ -71,7 +78,7 @@
         - iam
       amazon.aws.cloudformation:
         stack_name: "webrouter-iam-{{ landcolor }}"
-        # region: "{{ region }}"
+        region: "{{ region }}"
         state: present
         template: "iam-landscape/main.yaml"
         template_parameters:
@@ -86,7 +93,7 @@
       register: main_update
       amazon.aws.cloudformation:
         stack_name: "webrouter-main-{{ landcolor }}"
-        # region: "{{ region }}"
+        region: "{{ region }}"
         state: present
         template: "main-landscape/main.yaml"
         template_parameters:
