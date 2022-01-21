@@ -1,0 +1,148 @@
+---
+# The main ansible variables are:
+# landscape (syst, devl, qa, test, prod) - landscape that we want to build
+# color (blue, green) - name for the stack we want to build
+#
+- name: Ensure that a web router is up-to-date
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+
+    # if you need a different profile then add -e profile to the configuration
+    profile: default
+
+  tasks:
+
+    - name: Load the landscape specific variables
+      include_vars: "{{ item }}"
+      with_first_found:
+        - "vars/webrouter-{{ landscape }}-{{ color }}.yml"
+        - "vars/webrouter-{{ landscape }}.yml"
+
+    - name: Set facts based on landscape specific variables
+      set_fact:
+        landcolor: "{{ landscape }}-{{ color }}"
+        Prefix: "buaws-webrouter-{{ landscape }}-{{ color }}"
+        base_stack_name: "buaws-webrouter-base-{{ landscape }}-{{ color }}"
+
+    - name: Ensure that the CloudFormation templates in S3 are up to date
+      tags:
+        - s3only
+      community.aws.s3_sync:
+        bucket: "{{ template_bucket }}"
+        file_root: templates
+        key_prefix: "{{ template_path }}"
+
+    - name: "Ensure base stack up to date"
+      tags:
+        - base
+      amazon.aws.cloudformation:
+        stack_name: "{{ base_stack_name }}"
+        # region: "{{ region }}"
+        state: present
+        template: "base-landscape/main.yaml"
+        template_parameters:
+          Prefix: "{{ Prefix }}"
+
+    - name: "Get the ECR name from the stack output"
+      amazon.aws.cloudformation_info:
+        stack_name: "{{ base_stack_name }}"
+      register: base_info
+
+    - name: "Set variables based on the output"
+      set_fact:
+        ecr_name: "{{ base_info.cloudformation[ base_stack_name ].stack_outputs.Repository }}"
+
+    - name: "Changed when the ECR is empty"
+      command: "aws ecr list-images --query imageIds --repository-name {{ ecr_name }}"
+      check_mode: false
+      register: ecr_list_output
+      changed_when: ecr_list_output.stdout == '[]'
+
+    - name: "If ECR is empty then set the docker image"
+      when: ecr_list_output.changed
+      set_fact:
+        RouterImage: "buist/websites-webrouter-base"
+
+    - name: "Ensure iam stack up to date"
+      tags:
+        - iam
+      amazon.aws.cloudformation:
+        stack_name: "buaws-webrouter-iam-{{ landscape }}-{{ color }}"
+        # region: "{{ region }}"
+        state: present
+        template: "iam-landscape/main.yaml"
+        template_parameters:
+          Prefix: "buaws-webrouter-{{ landscape }}-{{ color }}"
+          VpcPrefix: "{{ VpcPrefix }}"
+        capabilities:
+          - CAPABILITY_IAM
+
+    - name: "Ensure main stack up to date"
+      tags:
+        - main
+      register: main_update
+      amazon.aws.cloudformation:
+        stack_name: "buaws-webrouter-main-{{ landcolor }}"
+        # region: "{{ region }}"
+        state: present
+        template: "main-landscape/main.yaml"
+        template_parameters:
+          Prefix: "buaws-webrouter-{{ landcolor }}"
+          VpcPrefix: "{{ VpcPrefix }}"
+          Landscape: "{{ landscape }}"
+          TemplateBucket: "https://s3.amazonaws.com/{{ template_bucket }}"
+          TemplatePath: "{{ landscape }}"
+          HostedZoneId: "{{ HostedZoneId }}"
+          HostedZoneName: "{{ HostedZoneName }} "
+          PublicAlbAcmCertificate: ""
+          KeyName: "chefdeveloper"
+          GitHubRepo: "{{ GitHubRepo }} "
+          GitHubBranch: "{{ landscape }}"
+          GitHubUser: "{{ GitHubUser }}"
+          # this weird escaping is necessary because the token contains {{
+          GitHubToken: "{{ '{{' + GitHubToken + '}}' }}"
+          DesiredServiceCapacity: "{{ DesiredServiceCapacity }}"
+          MaxServiceCapacity: "{{ MaxServiceCapacity }}"
+          DesiredCapacity: "{{ DesiredCapacity }}"
+          MaxSize: "{{ MaxSize }}"
+          UseLegacyNames: 'false'
+          RouterImage: "{{ RouterImage |default('') }}"
+
+    - name: Debug CFUpdate
+      debug:
+        var: "main_update"
+
+    - name: Output the change set info
+      tags:
+        - cfonly
+      debug:
+        msg:
+          - "type: {{ item.Type }}"
+          - "action: {{ item.ResourceChange.Action }}"
+          - "logical resource: {{ item.ResourceChange.LogicalResourceId }}"
+          - "replacement: {{ item.ResourceChange.Replacement }}"
+          - "resource_type: {{ item.ResourceChange.ResourceType }}"
+          - "details: {{ item.ResourceChange.Details }}"
+          - "rest {{ item }}"
+      loop_control:
+        label: "{{ item.ResourceChange.LogicalResourceId }}"
+      loop: "{{ main_update.meta }}"
+
+    # - name: "configure-account: Do the per region configuration"
+    #   tags:
+    #     - ec2-encryption
+    #     - securityhub
+    #     - guardduty
+    #     - guardrails
+    #     - logging
+    #     - remove-defaultvpc
+    #     - insightvm
+    #     - vpc
+    #   include_tasks:
+    #     file: "region-setup.yaml"
+    #   loop_control:
+    #     loop_var: region
+    #   loop: "{{ account_regions }}"

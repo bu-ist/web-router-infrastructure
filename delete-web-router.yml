@@ -1,0 +1,61 @@
+---
+# The main ansible variables are:
+# landscape (syst, devl, qa, test, prod) - landscape that we want to build
+# color (blue, green) - name for the stack we want to build
+#
+- name: Ensure that a web router instance has been deleted
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+
+    # if you need a different profile then add -e profile to the configuration
+    profile: default
+
+  tasks:
+
+    - name: Load the landscape specific variables
+      include_vars: "{{ item }}"
+      with_first_found:
+        - "vars/webrouter-{{ landscape }}-{{ color }}.yml"
+        - "vars/webrouter-{{ landscape }}.yml"
+
+    - name: Set facts based on landscape specific variables
+      set_fact:
+        landcolor: "{{ landscape }}-{{ color }}"
+        Prefix: "buaws-webrouter-{{ landscape }}-{{ color }}"
+        base_stack_name: "buaws-webrouter-base-{{ landscape }}-{{ color }}"
+
+    # - name: Ensure that the CloudFormation templates in S3 are up to date
+    #   tags:
+    #     - s3only
+    #   community.aws.s3_sync:
+    #     bucket: "{{ template_bucket }}"
+    #     file_root: templates
+    #     key_prefix: "{{ template_path }}"
+
+    - name: "Ensure main stack has been removed"
+      tags:
+        - main
+      register: main_update
+      amazon.aws.cloudformation:
+        stack_name: "buaws-webrouter-main-{{ landcolor }}"
+        # region: "{{ region }}"
+        state: absent
+
+    - name: "Ensure iam stack has been removed"
+      tags:
+        - iam
+      amazon.aws.cloudformation:
+        stack_name: "buaws-webrouter-iam-{{ landscape }}-{{ color }}"
+        # region: "{{ region }}"
+        state: absent
+
+    - name: "Ensure base stack has been removed"
+      tags:
+        - base
+      amazon.aws.cloudformation:
+        stack_name: "{{ base_stack_name }}"
+        # region: "{{ region }}"
+        state: absent
