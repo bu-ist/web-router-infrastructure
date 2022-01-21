@@ -24,8 +24,8 @@
     - name: Set facts based on landscape specific variables
       set_fact:
         landcolor: "{{ landscape }}-{{ color }}"
-        Prefix: "buaws-webrouter-{{ landscape }}-{{ color }}"
-        base_stack_name: "buaws-webrouter-base-{{ landscape }}-{{ color }}"
+        Prefix: "webrouter-{{ landscape }}-{{ color }}"
+        base_stack_name: "webrouter-base-{{ landscape }}-{{ color }}"
 
     - name: Ensure that the CloudFormation templates in S3 are up to date
       tags:
@@ -70,12 +70,12 @@
       tags:
         - iam
       amazon.aws.cloudformation:
-        stack_name: "buaws-webrouter-iam-{{ landscape }}-{{ color }}"
+        stack_name: "webrouter-iam-{{ landcolor }}"
         # region: "{{ region }}"
         state: present
         template: "iam-landscape/main.yaml"
         template_parameters:
-          Prefix: "buaws-webrouter-{{ landscape }}-{{ color }}"
+          Prefix: "{{ Prefix }}"
           VpcPrefix: "{{ VpcPrefix }}"
         capabilities:
           - CAPABILITY_IAM
@@ -85,12 +85,12 @@
         - main
       register: main_update
       amazon.aws.cloudformation:
-        stack_name: "buaws-webrouter-main-{{ landcolor }}"
+        stack_name: "webrouter-main-{{ landcolor }}"
         # region: "{{ region }}"
         state: present
         template: "main-landscape/main.yaml"
         template_parameters:
-          Prefix: "buaws-webrouter-{{ landcolor }}"
+          Prefix: "{{ Prefix }}"
           VpcPrefix: "{{ VpcPrefix }}"
           Landscape: "{{ landscape }}"
           TemplateBucket: "https://s3.amazonaws.com/{{ template_bucket }}"

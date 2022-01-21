@@ -24,8 +24,8 @@
     - name: Set facts based on landscape specific variables
       set_fact:
         landcolor: "{{ landscape }}-{{ color }}"
-        Prefix: "buaws-webrouter-{{ landscape }}-{{ color }}"
-        base_stack_name: "buaws-webrouter-base-{{ landscape }}-{{ color }}"
+        Prefix: "webrouter-{{ landscape }}-{{ color }}"
+        base_stack_name: "webrouter-base-{{ landscape }}-{{ color }}"
 
     # - name: Ensure that the CloudFormation templates in S3 are up to date
     #   tags:
@@ -40,7 +40,7 @@
         - main
       register: main_update
       amazon.aws.cloudformation:
-        stack_name: "buaws-webrouter-main-{{ landcolor }}"
+        stack_name: "webrouter-main-{{ landcolor }}"
         # region: "{{ region }}"
         state: absent
 
@@ -48,7 +48,7 @@
       tags:
         - iam
       amazon.aws.cloudformation:
-        stack_name: "buaws-webrouter-iam-{{ landscape }}-{{ color }}"
+        stack_name: "webrouter-iam-{{ landscape }}-{{ color }}"
         # region: "{{ region }}"
         state: absent
 
