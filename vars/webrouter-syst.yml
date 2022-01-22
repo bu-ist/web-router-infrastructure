@@ -16,3 +16,14 @@ DesiredServiceCapacity: 2
 MaxServiceCapacity: 20
 DesiredCapacity: 1
 MaxSize: 8
+
+# These parameters are largely for CloudFront distributions
+# that use this landscape
+# (issue- WAF and logbucket come from landscape so we 
+# need to keep the old style base&iam stacks around
+# until we rebuild WAF)
+#
+LogBucket: "buaws-webrouter-base-syst-logbucket-7d3thxkupm79.s3.amazonaws.com"
+LogPrefix: "cf-logs"
+RedirectToHttps: "false"
+WebACL: "203fb8d8-2300-4c2f-ba62-68c8a159ac34"

@@ -1,0 +1,69 @@
+---
+# Playbook to create/manage a CloudFront distribution using CloudFormation.  The main variables are:
+# alias - custom domain name
+# certArn - custom domain's certificate ARN
+# landscape (syst, devl, qa, test, prod) - landscape that we want to build
+# color (blue, green) - name for the stack we want to build
+#
+- name: Ensure that a cloudfront distribution is up-to-date
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+
+    # if you need a different profile then add -e profile to the configuration
+    # not currently using
+    #profile: default
+
+    # if you need a different region then add -e region to the command line (or Ansible Tower run)
+    region: us-east-1
+
+  tasks:
+
+    - name: Load the landscape specific variables
+      include_vars: "{{ item }}"
+      with_first_found:
+        - "vars/webrouter-{{ landscape }}-{{ color }}.yml"
+        - "vars/webrouter-{{ landscape }}.yml"
+
+    - name: Set facts based on landscape specific variables
+      set_fact:
+        landcolor: "{{ landscape }}-{{ color }}"
+        stack_name: "domain-{{ alias |replace('.','-') }}"
+        RoutingOriginDNS: "webrouter-{{ landscape }}-{{ color }}.{{ HostedZoneName }}"
+
+    - name: "Ensure CloudFront stack is up to date"
+      tags:
+        - cfonly
+      register: stack_update
+      amazon.aws.cloudformation:
+        stack_name: "{{ stack_name }}"
+        region: "{{ region }}"
+        state: present
+        template: "cloudfront/main.yaml"
+        template_parameters:
+          Alias: "{{ alias }}"
+          LogBucket: "{{ LogBucket }}"
+          LogPrefix: "{{ LogPrefix }}"\
+          RedirectToHttps: "false"
+          RoutingOriginDNS: "{{ RoutingOriginDNS }}"
+          SSLCertificateArn: "{{ certArn }}"
+          WebACL: "{{ WebACL }}"
+
+    - name: Output the change set info if in check mode
+      when: ansible_check_mode
+      tags:
+        - cfonly
+      debug:
+        msg:
+          - "type: {{ item.Type }}"
+          - "action: {{ item.ResourceChange.Action }}"
+          - "logical resource: {{ item.ResourceChange.LogicalResourceId }}"
+          - "replacement: {{ item.ResourceChange.Replacement }}"
+          - "resource_type: {{ item.ResourceChange.ResourceType }}"
+          - "details: {{ item.ResourceChange.Details }}"
+          - "rest {{ item }}"
+      loop_control:
+        label: "{{ item.ResourceChange.LogicalResourceId }}"
+      loop: "{{ stack_update.meta }}"
