@@ -1,9 +1,16 @@
 ---
 # Playbook to create/manage a CloudFront distribution using CloudFormation.  The main variables are:
 # alias - custom domain name
-# certArn - custom domain's certificate ARN
+# certID - custom domain's certificate ID (the part of the certificate Arn after 'certificate/' )
 # landscape (syst, devl, qa, test, prod) - landscape that we want to build
 # color (blue, green) - name for the stack we want to build
+#
+# There are a few ways one can set these parameters:
+# 1) On the Ansible command line:
+# ansible-playbook setup-cloudfront.yml -e landscape=syst -e color=yellow -e alias=fred.bu.edu -e certID=c488ab67-6ffc-4992-8453-d9233c9e0ab5 setup-cloudfront.yml
+#
+# 2) In an included variables file
+# ansible-playbook -e @domains/fred.bu.edu.yml setup-cloudfront.yml
 #
 - name: Ensure that a cloudfront distribution is up-to-date
   hosts: localhost
@@ -41,29 +48,22 @@
         stack_name: "{{ stack_name }}"
         region: "{{ region }}"
         state: present
-        template: "cloudfront/main.yaml"
+        # template: "cloudfront/main.yaml"
+        template: "cloudfront-main-temp.yaml"
         template_parameters:
           Alias: "{{ alias }}"
           LogBucket: "{{ LogBucket }}"
-          LogPrefix: "{{ LogPrefix }}"\
+          LogPrefix: "{{ LogPrefix }}"
           RedirectToHttps: "false"
           RoutingOriginDNS: "{{ RoutingOriginDNS }}"
-          SSLCertificateArn: "{{ certArn }}"
+          SSLCertificateID: "{{ certID }}"
           WebACL: "{{ WebACL }}"
 
     - name: Output the change set info if in check mode
-      when: ansible_check_mode
+      when: 
+        - ansible_check_mode
+        # - stack_update.changed
       tags:
         - cfonly
       debug:
-        msg:
-          - "type: {{ item.Type }}"
-          - "action: {{ item.ResourceChange.Action }}"
-          - "logical resource: {{ item.ResourceChange.LogicalResourceId }}"
-          - "replacement: {{ item.ResourceChange.Replacement }}"
-          - "resource_type: {{ item.ResourceChange.ResourceType }}"
-          - "details: {{ item.ResourceChange.Details }}"
-          - "rest {{ item }}"
-      loop_control:
-        label: "{{ item.ResourceChange.LogicalResourceId }}"
-      loop: "{{ stack_update.meta }}"
+        var: stack_update.meta
