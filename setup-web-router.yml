@@ -62,16 +62,6 @@
       set_fact:
         ecr_name: "{{ base_info.cloudformation[ base_stack_name ].stack_outputs.Repository }}"
 
-    - name: "Changed when the ECR is empty (type 2)"
-      community.aws.ecs_ecr:
-        name: "{{ ecr_name }}"
-        region: "{{ region }}"
-      register: ecr_list
-
-    - name: debug
-      debug:
-        msg: "{{ ecr_list }}"
-
     - name: "Changed when the ECR is empty"
       command: "aws --region {{ region }} ecr list-images --repository-name {{ ecr_name }}"
       check_mode: false
