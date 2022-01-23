@@ -62,6 +62,26 @@
       set_fact:
         ecr_name: "{{ base_info.cloudformation[ base_stack_name ].stack_outputs.Repository }}"
 
+    - name: "Changed when the ECR is empty (type 2)"
+      community.aws.ecs_ecr:
+        name: "{{ ecr_name }}"
+        region: "{{ region }}"
+      register: ecr_list
+
+    - name: debug
+      debug:
+        msg: "{{ ecr_list }}"
+
+    - name: "Changed when the ECR is empty"
+      command: "aws --region {{ region }} ecr list-images --repository-name {{ ecr_name }}"
+      check_mode: false
+      register: ecr_list_test
+      # changed_when: ecr_list_output.stdout == '[]'
+
+    - name: debug list test
+      debug:
+        msg: "{{ ecr_list_test }}"
+
     - name: "Changed when the ECR is empty"
       command: "aws --region {{ region }} ecr list-images --query imageIds --repository-name {{ ecr_name }}"
       check_mode: false
@@ -127,17 +147,7 @@
       tags:
         - cfonly
       debug:
-        msg:
-          - "type: {{ item.Type }}"
-          - "action: {{ item.ResourceChange.Action }}"
-          - "logical resource: {{ item.ResourceChange.LogicalResourceId }}"
-          - "replacement: {{ item.ResourceChange.Replacement }}"
-          - "resource_type: {{ item.ResourceChange.ResourceType }}"
-          - "details: {{ item.ResourceChange.Details }}"
-          - "rest {{ item }}"
-      loop_control:
-        label: "{{ item.ResourceChange.LogicalResourceId }}"
-      loop: "{{ main_update.meta }}"
+        var: main_update.meta
 
     # - name: "configure-account: Do the per region configuration"
     #   tags:
