@@ -1,0 +1,12 @@
+# This is an inventory file for a landscape file
+# for the all_cloudfronts.yml Custom Domain playbook
+#
+# The parameters of the host can be found in
+# the host_vars and group_vars subdirectories.
+#
+[syst]
+fred.bu.edu
+fred.rexden.us
+
+[canary]
+fred.rexden.us

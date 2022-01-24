@@ -1,0 +1,29 @@
+---
+
+# The alias which should match the inventory name
+#
+alias: fred.rexden.us
+
+# The CertificateID of the ACM certificate
+#
+SSLCertificateID: e6f47d31-2444-4afc-a438-79c1efb25da2
+
+# The landscape should come from the group_vars but could be overriden here if necessary
+#
+#landscape: syst
+
+# The Blue/Green landscape should be managed from the group_vars but could be overriden here if necessary
+#color: yellow
+
+# Type of custom domain (wordpress, redirect, proxy)
+#
+type: dsmk@bu.edu
+
+# ServiceNow ID where people can find information (INCxxx or PRJxxx)
+#
+servicenow: PRJ0078562
+
+# Date of last acknowledgement from custom domain owner that the 
+# domain is still wanted/needed
+#
+last_acknowledgement: 2022-01-24

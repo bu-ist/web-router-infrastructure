@@ -1,0 +1,63 @@
+---
+# Playbook to create/manage a CloudFront distribution using CloudFormation.  The main variables are:
+# alias - custom domain name
+# certID - custom domain's certificate ID (the part of the certificate Arn after 'certificate/' )
+# landscape (syst, devl, qa, test, prod) - landscape that we want to build
+# color (blue, green) - name for the stack we want to build
+#
+# There are a few ways one can set these parameters:
+# 1) On the Ansible command line:
+# ansible-playbook setup-cloudfront.yml -e landscape=syst -e color=yellow -e alias=fred.bu.edu -e certID=c488ab67-6ffc-4992-8453-d9233c9e0ab5 setup-cloudfront.yml
+#
+# 2) In an included variables file
+# ansible-playbook -e @domains/fred.bu.edu.yml setup-cloudfront.yml
+#
+- name: Ensure that all the cloudfront distributions are up-to-date
+  hosts: all
+  connection: local
+  gather_facts: no
+
+  vars:
+
+    # if you need a different profile then add -e profile to the configuration
+    # not currently using
+    #profile: default
+
+    # if you need a different region then add -e region to the command line (or Ansible Tower run)
+    region: us-east-1
+
+  tasks:
+
+    - name: Set facts based on landscape specific variables
+      set_fact:
+        landcolor: "{{ landscape }}-{{ color }}"
+        stack_name: "domain-{{ alias |replace('.','-') }}"
+        RoutingOriginDNS: "webrouter-{{ landscape }}-{{ color }}.{{ HostedZoneName }}"
+
+    - name: "Ensure CloudFront stack is up to date"
+      tags:
+        - cfonly
+      register: stack_update
+      amazon.aws.cloudformation:
+        stack_name: "{{ stack_name }}"
+        region: "{{ region }}"
+        state: present
+        # template: "cloudfront/main.yaml"
+        template: "cloudfront-main-temp.yaml"
+        template_parameters:
+          Alias: "{{ alias }}"
+          LogBucket: "{{ LogBucket }}"
+          LogPrefix: "{{ LogPrefix }}"
+          RedirectToHttps: "false"
+          RoutingOriginDNS: "{{ RoutingOriginDNS }}"
+          SSLCertificateID: "{{ SSLCertificateID }}"
+          WebACL: "{{ WebACL }}"
+
+    - name: Output the change set info if in check mode
+      when:
+        - ansible_check_mode
+        # - stack_update.changed
+      tags:
+        - cfonly
+      debug:
+        var: stack_update.meta
