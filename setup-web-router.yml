@@ -43,6 +43,7 @@
     - name: "Ensure base stack up to date"
       tags:
         - base
+      register: base_stack
       amazon.aws.cloudformation:
         stack_name: "{{ base_stack_name }}"
         region: "{{ region }}"
@@ -57,29 +58,24 @@
         stack_name: "{{ base_stack_name }}"
         region: "{{ region }}"
       register: base_info
+      changed_when: base_stack_name in base_info.cloudformation
 
     - name: "Set variables based on the output"
+      when: base_info.changed
       set_fact:
         ecr_name: "{{ base_info.cloudformation[ base_stack_name ].stack_outputs.Repository }}"
 
     - name: "Changed when the ECR is empty"
-      command: "aws --region {{ region }} ecr list-images --repository-name {{ ecr_name }}"
-      check_mode: false
-      register: ecr_list_test
-      # changed_when: ecr_list_output.stdout == '[]'
-
-    - name: debug list test
-      debug:
-        msg: "{{ ecr_list_test }}"
-
-    - name: "Changed when the ECR is empty"
+      when: ecr_name is defined
       command: "aws --region {{ region }} ecr list-images --query imageIds --repository-name {{ ecr_name }}"
       check_mode: false
       register: ecr_list_output
       changed_when: ecr_list_output.stdout == '[]'
 
     - name: "If ECR is empty then set the docker image"
-      when: ecr_list_output.changed
+      when: 
+        - ecr_name is defined 
+        - ecr_list_output.changed
       set_fact:
         RouterImage: "buist/websites-webrouter-base"
 
