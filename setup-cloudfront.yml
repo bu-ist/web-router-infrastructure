@@ -10,7 +10,7 @@
 # ansible-playbook setup-cloudfront.yml -e landscape=syst -e color=yellow -e alias=fred.bu.edu -e certID=c488ab67-6ffc-4992-8453-d9233c9e0ab5 setup-cloudfront.yml
 #
 # 2) In an included variables file
-# ansible-playbook -e @domains/fred.bu.edu.yml setup-cloudfront.yml
+# ansible-playbook -e @vars/domain-fred.bu.edu.yml setup-cloudfront.yml
 #
 - name: Ensure that a cloudfront distribution is up-to-date
   hosts: localhost
