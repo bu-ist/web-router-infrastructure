@@ -16,7 +16,7 @@
       # if you need a different region then add -e region to the command line (or Ansible Tower run)
     region: us-east-1
 
-tasks:
+  tasks:
 
     - name: Load the landscape specific variables
       include_vars: "{{ item }}"
