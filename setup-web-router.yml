@@ -3,6 +3,12 @@
 # landscape (syst, devl, qa, test, prod) - landscape that we want to build
 # color (blue, green) - name for the stack we want to build
 #
+# This playbook is split into 3 different sections:
+# 1. Initial steps (sync S3, ensure base and iam stacks up to date)
+# 2. First run check to see if the main stack is up to date
+# 3. If the ECR does not have an image then wait for the CodePipeline
+#    to build one and then check the stack again.
+#
 - name: Ensure that a web router is up-to-date
   hosts: localhost
   connection: local
@@ -20,17 +26,24 @@
   tasks:
 
     - name: Load the landscape specific variables
+      tags:
+        - wait_for_codepipeline
       include_vars: "{{ item }}"
       with_first_found:
         - "vars/webrouter-{{ landscape }}-{{ color }}.yml"
         - "vars/webrouter-{{ landscape }}.yml"
 
     - name: Set facts based on landscape specific variables
+      tags:
+        - wait_for_codepipeline
       set_fact:
         landcolor: "{{ landscape }}-{{ color }}"
         Prefix: "webrouter-{{ landscape }}-{{ color }}"
         base_stack_name: "webrouter-base-{{ landscape }}-{{ color }}"
 
+    # ##########################################################################
+    # 1. Initial steps (sync S3, ensure base and iam stacks up to date)
+    #
     - name: Ensure that the CloudFormation templates in S3 are up to date
       tags:
         - s3only
@@ -54,6 +67,8 @@
           Prefix: "{{ Prefix }}"
 
     - name: "Get the ECR name from the stack output"
+      tags:
+        - wait_for_codepipeline
       amazon.aws.cloudformation_info:
         stack_name: "{{ base_stack_name }}"
         region: "{{ region }}"
@@ -61,23 +76,11 @@
       changed_when: base_stack_name in base_info.cloudformation
 
     - name: "Set variables based on the output"
+      tags:
+        - wait_for_codepipeline
       when: base_info.changed
       set_fact:
         ecr_name: "{{ base_info.cloudformation[ base_stack_name ].stack_outputs.Repository }}"
-
-    - name: "Changed when the ECR is empty"
-      when: ecr_name is defined
-      command: "aws --region {{ region }} ecr list-images --query imageIds --repository-name {{ ecr_name }}"
-      check_mode: false
-      register: ecr_list_output
-      changed_when: ecr_list_output.stdout == '[]'
-
-    - name: "If ECR is empty then set the docker image"
-      when: 
-        - ecr_name is defined 
-        - ecr_list_output.changed
-      set_fact:
-        RouterImage: "buist/websites-webrouter-base"
 
     - name: "Ensure iam stack up to date"
       tags:
@@ -92,6 +95,23 @@
           VpcPrefix: "{{ VpcPrefix }}"
         capabilities:
           - CAPABILITY_IAM
+
+    # ##########################################################################
+    # 2. First run check to see if the main stack is up to date
+    #
+    - name: "Changed when the ECR is empty"
+      when: ecr_name is defined
+      command: "aws --region {{ region }} ecr list-images --query imageIds --repository-name {{ ecr_name }}"
+      check_mode: false
+      register: ecr_list_output
+      changed_when: ecr_list_output.stdout == '[]'
+
+    - name: "If ECR is empty then set the docker image"
+      when:
+        - ecr_name is defined
+        - ecr_list_output.changed
+      set_fact:
+        RouterImage: "buist/websites-webrouter-base"
 
     - name: "Ensure main stack up to date"
       tags:
@@ -135,18 +155,59 @@
       debug:
         var: main_update.meta
 
-    # - name: "configure-account: Do the per region configuration"
-    #   tags:
-    #     - ec2-encryption
-    #     - securityhub
-    #     - guardduty
-    #     - guardrails
-    #     - logging
-    #     - remove-defaultvpc
-    #     - insightvm
-    #     - vpc
-    #   include_tasks:
-    #     file: "region-setup.yaml"
-    #   loop_control:
-    #     loop_var: region
-    #   loop: "{{ account_regions }}"
+    # ##########################################################################
+    # 3. If the ECR does not have an image then wait for the CodePipeline
+    #    to build one and then check the stack again.
+    #
+    - name: Only do the second pass if we needed to set the initial RouterImage
+      when: RouterImage is defined or ecr_name is not defined
+      block:
+
+        - name: Wait for the CodePipeline to build the first image
+          tags:
+            - wait_for_codepipeline
+          when: ecr_name is defined
+          command: "aws --region {{ region }} ecr list-images --query imageIds --repository-name {{ ecr_name }}"
+          # check_mode: false
+          register: wait_for_codepipeline
+          until: wait_for_codepipeline is defined and wait_for_codepipeline.stdout != '[]'
+          changed_when: wait_for_codepipeline.stdout != '[]'
+          retries: 15
+          delay: 30
+
+        - name: Debug result of waiting
+          tags:
+            - wait_for_codepipeline
+          debug:
+            var: wait_for_codepipeline
+
+        - name: "Update main stack to use the ECR images"
+          # the when is used to make certain we don't accidentally do the second
+          # update unless the ecr contains an image
+          when: wait_for_codepipeline.changed
+          register: main_2nd_update
+          amazon.aws.cloudformation:
+            stack_name: "webrouter-main-{{ landcolor }}"
+            region: "{{ region }}"
+            state: present
+            template: "main-landscape/main.yaml"
+            template_parameters:
+              Prefix: "{{ Prefix }}"
+              VpcPrefix: "{{ VpcPrefix }}"
+              Landscape: "{{ landscape }}"
+              TemplateBucket: "https://s3.amazonaws.com/{{ template_bucket }}"
+              TemplatePath: "{{ landscape }}"
+              HostedZoneId: "{{ HostedZoneId }}"
+              HostedZoneName: "{{ HostedZoneName }} "
+              PublicAlbAcmCertificate: ""
+              KeyName: "chefdeveloper"
+              GitHubRepo: "{{ GitHubRepo }} "
+              GitHubBranch: "{{ landscape }}"
+              GitHubUser: "{{ GitHubUser }}"
+              # this weird escaping is necessary because the token contains {{
+              GitHubToken: "{{ '{{' + GitHubToken + '}}' }}"
+              DesiredServiceCapacity: "{{ DesiredServiceCapacity }}"
+              MaxServiceCapacity: "{{ MaxServiceCapacity }}"
+              DesiredCapacity: "{{ DesiredCapacity }}"
+              MaxSize: "{{ MaxSize }}"
+              UseLegacyNames: 'false'
