@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "Alias",
+    "ParameterValue": "servicenow.bu.edu"
+  },
+  {
+    "ParameterKey": "SSLCertificateID",
+    "ParameterValue": "f5687384-bc30-49a9-9c8e-f01b2a4b6b84"
+  }
+]
