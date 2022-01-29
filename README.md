@@ -1,68 +1,3 @@
-## Procedure for building the core infrastructure
-
-## Switching DNS name from imported www certificate to Amazon managed one
-
-The initial WebRouter ALB used the same SSL certificate as the `www*.bu.edu` CloudFront instance.  This 
-was the approach documented in the Quick Reference materials but has two issues:
-1) Anything that changes the SSL Certificate ARN requires that both the CloudFront instance and the ALB
-need to be updated to prevent a future outage.  This resulted in a late-August 2021 P1 incident and ENHC0026486.
-2) CloudFront will only forward traffic if the ALB is presenting a certificate that includes the CloudFront
-client certificate.  This needs to be corrected for the Custom Domains project to be successful.
-
-This includes a few manual steps to ensure that the existing `www*.bu.edu` CloudFront domain continues to 
-process SSL traffic during the transition.  Replace `<landscape>` with the appropriate landscape.
-
-| Landscape | cf-bucket-name | HostedZoneId | HostedZoneName | cloudfront-parameter-file |
-| --- | --- | --- | --- | --- |
-| syst | buaws-web2cloud-nonprod | Z0022698234MMVVFBQQN3 | webrouter-nprd.aws-cloud.bu.edu | cloudfront-syst/settings/buaws-site-www-syst-bu-edu-parameters.json |
-| qa | buaws-web2cloud-nonprod | Z0022698234MMVVFBQQN3 | webrouter-nprd.aws-cloud.bu.edu | cloudfront-qa/settings/buaws-site-www-qa-bu-edu-parameters.json _and_ cloudfront-qa/settings/buaws-site-www-buwd-bu-edu-parameters.json |
-| devl | buaws-web2cloud-nonprod | Z0022698234MMVVFBQQN3 | webrouter-nprd.aws-cloud.bu.edu |
-| test | buaws-web2cloud-nonprod | Z0022698234MMVVFBQQN3 | webrouter-nprd.aws-cloud.bu.edu | cloudfront-test/settings/buaws-site-www-test-bu-edu-parameters.json |
-| prod | buaws-websites-prod | Z10323963VM5EBHR1LN4Q | webrouter-prd.aws-cloud.bu.edu | cloudfront/settings/buaws-site-www-bu-edu-parameters.json |
-
-1. Double check that the www*.bu.edu address is working properly before starting.
-
-2. Copy the various CloudFormation templates to the appropriate bucket:
-
-```bash
-$ ./deploy <profile-name> <cf-bucket-name> <landscape>
-```
-
-3. Edit the CloudFormation parameter file for the main-landscape stack to have the Route53 subdomain for this account - 
-   see the table above for the HostedZoneId and HostedZoneName.  See `main-landscape/settings/buaws-webrouter-main-syst-parameters.json` for an example of including it.  Do not change the PublicAlbAcmCertificate parameter yet.
-
-4. Update the main-landscape CF stack using the following command:
-
-```bash
-$ ./update.py --profile <profile-name> main-landscape/settings/buaws-webrouter-main-<landscape>-parameters.json
-```
-
-5.  Monitor the CloudFormation stack update using the AWS Web Console and confirm that the `www*.bu.edu` hostname
-    still works.  Once it is done you should be able to find a `webrouter-<landscape>.<HostedZoneName>` SSL
-    certificate in Amazon's Certificate Manager (ACM) and it should have a status of Issued.
-
-6.  Go to the EC2 Web Console, find the appropriate landscape's LoadBalancer, select Listeners, and click on 
-    "View/edit certificates" under the port 443 listener.  Manually add the new certificate to the certificate list
-    by selecting the plus sign, click the check box next to the `webrouter-<landscape>.<HostedZoneName>`, and then click the "Add" button that appears under the plus sign.
-
-7.  Update the CloudFront CF parameter file (cloudfront-parameter-file above) changing the RoutingOriginDNS parameter to the 
-    `webrouter-<landscape>.<HostedZoneName>` setting above.  Then update that stack using:
-
-```bash
-$ ./update.py --profile <profile-name> <cloudfront-parameter-file>
-```
-
-8.  Confirm that `www*.bu.edu` still works.  Once that is done then update the main-landscape CloudFormation parameter
-    file changing the ParameterValue for PublicAlbAcmCertificate to an empty string ("").  This will cause the DEFAULT
-    SSL certificate for the ALB to the new internal hostname.  This is deployed using:
-
-```bash
-$ ./update.py --profile <profile-name> main-landscape/settings/buaws-webrouter-main-<landscape>-parameters.json
-```
-
-9.  Remove the non-default SSL certificate manually using AWS web console.
-
-
 ## Building a Cloudfront virtual host
 
 Once we create a CloudFront distribution we do not want to have to change it if at all posible. To make that
@@ -146,46 +81,20 @@ $ aws --profile x secretsmanager create-secret --name websites-webrouter/dockerh
 }
 ```
 
-## Setting up a new landscape or test DR site
+## WebRouter account setup
 
-We based our ECS CodeDeploy version on a quick reference.  It used a vanilla Amazon container as part of the service
-definition to get the initial version up.  However, this has the following issue.  If you do an update stack with that
-version it will try to revert to the initial version and the health check for the ALB will fail.  This then causes
-the stack to say it should rollback to the previous version which also has the initial version.  Eventually this will
-fail.
+These are the one-time steps necessary to prepare an account for the WebRouter.  
 
-We solve that problem by making the CodePipeline update both the versioned image (tag based on GIT hash) and the "latest"
-tag in the ECR.  Then we make the CloudFormation reference the latest tag in the repo.  This means that
-CloudFormation service updates will roll back to the latest version in the ECR.  The only negative to this approach is
-creating a new landscape which will need to do something like:
+1. If the VPC has not been created for this landscape, this will create it.
+** Run the base-landscape stack: `./create-stack.sh awsprofile region vpc buaws-{vpc-name} --capabilities CAPABILITY_IAM`
 
-If the VPC has not been createdfor this landscape, this will create it.
-** Run the base-landscape stack: ./create-stack.sh awsprofile region vpc buaws-{vpc-name} --capabilities CAPABILITY_IAM
-      Example:
+Example:
 
 ```bash
 ./create-stack.sh default us-west-2 vpc buaws-websites-dr-prod --capabilities CAPABILITY_IAM
 ```
 
-1. Create new template settings files.
-   Create new github branch for new landscape.
-1. Send the template directory to the S3 bucket for usage: ./deploy awsprofile {s3bucket} {landscape}. Where `profile` is default and `s3bucket` and `landscape` is from the file buaws-webrouter-main-{landscape}-parameters.json
-for Example: "https://s3.amazonaws.com/buaws-web2cloud-nonprod-us-west-2"   you would use
-```bash
-./deploy default buaws-web2cloud-nonprod prod
-```
-1. Run the base-landscape stack: ./create-stack.sh awsprofile region base-landscape buaws-webrouter-base-{landscape}
-      Example:
-      ```bash
-      ./create-stack.sh default us-west-2 base-landscape buaws-webrouter-base-dr-prod
-      ```
-1. Run the iam-landscape stack: ./create-stack.sh awsprofile region iam-landscape buaws-webrouter-iam-{landscape} --capabilities C
-APABILITY_IAM
-      Example:
-      ```bash
-      ./create-stack.sh default us-west-2 iam-landscape buaws-webrouter-iam-dr-prod  --capabilities CAPABILITY_IAM
-      ```
-1. Do these steps to create the WAF NOTE: not needed for dr testing.
+2. Do these steps to create the WAF NOTE: not needed for dr testing.
 
 	a. Use console Cloudformation create stack
 
@@ -203,37 +112,59 @@ APABILITY_IAM
 
       g. click through the defaults and create the stack.
 
-1. Do an initial run of the main-landscape stack with the bootstrap image (see settings/buaws-webrouter-main-prod-parameters.json-bootstrap) for an example).
+## Ansible system setup
+
+`ist-aws-toolbox` is already set up to run these Ansible playbooks.  The follow instructions are in case you want to 
+run this on a different system such as a Mac laptop.
+
+## Building/maintaining a blue/green environment for a specific landscape (DR site question?)
+
+The `setup-web-router.yml` and `delete-web-router.yml` Ansible playbooks can be used to manage instances of the WebRouter.
+Right now they do not incorporate any CloudFront changes but rather build the underlying WebRouter including its
+CI/CD pipeline.  
+
+The playbooks take two parameters:
+
+- _landscape_ : The landscape that this WebRouter instance is a part of.
+- _color_ : The color name of the system being managed.  This is not limited to blue/green but can be any alphanumeric text less than 7-8 characters.
+
+All other variables are stored in Ansible variable files located in the `vars` subdirectory.  
+
+This presumes that you have completed the steps [WebRouter account setup](#webrouter-account-setup) and [Ansible system setup](#ansible-system-setup). Make certain that you have done `awslogin` and have CD'ed to the root of this GitHub repo.
+
+The command for creating and updating a WebRouter instance is the same:
 
 ```bash
-#copy the bootstrap file to the main file
-cd main-landscape/settings/
-cp buaws-webrouter-main-dr-prod-parameters.json-bootstrap buaws-webrouter-main-dr-prod-parameters.json
-#now run the creation
-cd ../../
-./create-stack.sh default us-west-2 main-landscape buaws-webrouter-main-dr-prod
+$ ansible-playbook -e landscape=syst -e color=blue setup-web-router.yml
+[snipped output]
+
+
+PLAY RECAP ******************************************************************************************************************
+localhost                  : ok=12   changed=8    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 ```
-1. Once the CodePipeline has run once successfully, Switch the stack back to the normal settings (default:latest) and do an update-stack.
 
-```bash
-# copy the orig file to the main parameter file
-cd main-landscape/settings/
-cp buaws-webrouter-main-dr-prod-parameters.json.orig buaws-webrouter-main-dr-prod-parameters.json
-#now update the stack
-cd ../../
-./update-stack.sh default us-west-2 main-landscape buaws-webrouter-main-dr-prod
-```
-1. Build the CloudFront stacks for your landscape:
+One can add `--check` to the command line to see what changes the stack will make.  For now this will always show that the main-landscape stack will change because of some CloudFormation nested stack interactions.
 
-Note that the only time you need the bootstrap stack is just after you create the base-landscape stack.
-You can delete and rebuild the main-landscape stack without issues.
+If the build fails waiting for the CodePipeline to run then you should check the CodePipeline with the AWS Web Console 
+because it may have encountered a GitHub API error.  If so, wait a few minutes and click the "Release Change" button 
+to have the pipeline try again.  Once the CodePipeline has completed successfully then you can re-run the 
+`setup-web-router.yml` and it will finish the installation.
 
-##  Deploying an update
+## Common release workflow
 
-deploy <profile> <TemplateBucket>  <landscape>
-Note:TemplateBucket is only center part.  Example the center part of this: 	"https://s3.amazonaws.com/    buaws-web2cloud-nonprod    -us-east-1"
-Example
-./deploy w2c-non-prod buaws-web2cloud-nonprod test
+1. Build the new color landscape a day or two before the change date and do internal testing.  This testing can either be
+   testing the WebRouter instance directly or repointing a less significant CloudFront to this WebRouter instance.
+
+2. During the change window repoint the CloudFront instances to the new WebRouter instance and do smoke testing.  Do not 
+   delete the previous WebRouter instance as this will provide a quick rollback option during the initial release.
+
+3. A few days later delete the old WebRouter instance using the `delete-web-router.yml` Ansible playbook.
+
+Note: During the initial transition to the new approach step 3 will need to be different.  That is because the 
+base and iam stacks of the non-blue/green infrastructure are used by the old WAF version 1 implementation (and the 
+CloudFront logs which are examined by our WAFv1 implementation).  In that case 
+we would manually delete the landscapes' main-landscape stack (`buaws-webrouter-main-sys` for example) to minimize 
+the overhead of that infrastructure.
 
 ## VPC VPN configuration
 
