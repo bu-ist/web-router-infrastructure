@@ -114,8 +114,27 @@ Example:
 
 ## Ansible system setup
 
-`ist-aws-toolbox` is already set up to run these Ansible playbooks.  The follow instructions are in case you want to 
-run this on a different system such as a Mac laptop.
+`ist-aws-toolbox` is already set up to run these Ansible playbooks using a special Python virtual environment.  You
+should activate the using the `/opt/ansible/bin/activate` script as such:
+
+```bash
+[dsmk@ist-aws-toolbox ~]$ . /opt/ansible/bin/activate
+(ansible) [dsmk@ist-aws-toolbox ~]$
+```
+
+The following instructions are in case you want to run this on a different system such as a Mac laptop.  You will 
+want to have the following:
+1. AWS credentials (either access/secret key or Docker plus `awslogin` script)
+2. Ansible
+3. The two AWS collections installed locally as documented here:
+
+```bash
+$ ansible-galaxy collection install -r collections/requirements.yml
+Process install dependency map
+Starting collection install process
+Skipping 'amazon.aws' as it is already installed
+Skipping 'community.aws' as it is already installed
+```
 
 ## Building/maintaining a blue/green environment for a specific landscape (DR site question?)
 
@@ -145,6 +164,9 @@ localhost                  : ok=12   changed=8    unreachable=0    failed=0    s
 
 One can add `--check` to the command line to see what changes the stack will make.  For now this will always show that the main-landscape stack will change because of some CloudFormation nested stack interactions.
 
+Building a brand new WebRouter instance will take approximately 25-40 minutes.  You might want to watch/check especially
+the main landscape stacks using the AWS Web Console to monitor the CloudFormation stacks.
+
 If the build fails waiting for the CodePipeline to run then you should check the CodePipeline with the AWS Web Console 
 because it may have encountered a GitHub API error.  If so, wait a few minutes and click the "Release Change" button 
 to have the pipeline try again.  Once the CodePipeline has completed successfully then you can re-run the 
@@ -163,7 +185,7 @@ to have the pipeline try again.  Once the CodePipeline has completed successfull
 Note: During the initial transition to the new approach step 3 will need to be different.  That is because the 
 base and iam stacks of the non-blue/green infrastructure are used by the old WAF version 1 implementation (and the 
 CloudFront logs which are examined by our WAFv1 implementation).  In that case 
-we would manually delete the landscapes' main-landscape stack (`buaws-webrouter-main-sys` for example) to minimize 
+we would manually delete the landscapes' main-landscape stack (`buaws-webrouter-main-syst` for example) to minimize 
 the overhead of that infrastructure.
 
 ## VPC VPN configuration
