@@ -1,0 +1,26 @@
+[
+  {
+    "ParameterKey": "Alias",
+    "ParameterValue": "fred.bu.edu"
+  },
+  {
+    "ParameterKey": "WebACL",
+    "ParameterValue": "203fb8d8-2300-4c2f-ba62-68c8a159ac34"
+  },
+  {
+    "ParameterKey": "RoutingOriginDNS",
+    "ParameterValue": "webrouter-syst.webrouter-nprd.aws-cloud.bu.edu"
+  },
+  {
+    "ParameterKey": "SSLCertificateID",
+    "ParameterValue": "c488ab67-6ffc-4992-8453-d9233c9e0ab5"
+  },
+  {
+    "ParameterKey": "LogBucket",
+    "ParameterValue": "buaws-webrouter-base-syst-logbucket-7d3thxkupm79.s3.amazonaws.com"
+  },
+  {
+    "ParameterKey": "RedirectToHttps",
+    "ParameterValue": "false"
+  }
+]

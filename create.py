@@ -97,6 +97,11 @@ args = parser.parse_args()
 
 JSONfile = args.JSONfile[0]
 profile = args.profile
+if profile == 'default'
+    profile = ''
+else
+    profile = '--profile ' + profile
+
 if command != 'delete-stack':
     template=args.template
     iam = args.iam
@@ -148,7 +153,7 @@ else:
     iam = "--capabilities CAPABILITY_IAM"
 
 if command != 'delete-stack':
-    cmdstring = "aws cloudformation {} --profile {} --region {} --stack-name {} --template-body file://{} --parameters file://{} {} {}".format(
+    cmdstring = "aws cloudformation {} --region {} --stack-name {} --template-body file://{} --parameters file://{} {} {}".format(
         command,
         profile,
         region,
@@ -159,7 +164,7 @@ if command != 'delete-stack':
         extra
     )
 else:
-    cmdstring = "aws cloudformation {} --profile {} --region {} --stack-name {} {} {}".format(
+    cmdstring = "aws cloudformation {} --region {} --stack-name {} {} {}".format(
         command,
         profile,
         region,
@@ -168,7 +173,7 @@ else:
         extra
     )
 
-waitstring = "aws cloudformation wait {} --profile {} --region {} --stack-name {}".format(
+waitstring = "aws cloudformation wait {} --region {} --stack-name {}".format(
     wait_command,
     profile,
     region,

@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "Alias",
+    "ParameterValue": "sites-staging.bu.edu"
+  },
+  {
+    "ParameterKey": "SSLCertificateID",
+    "ParameterValue": "addba9dc-2243-49b3-a090-af538d615add"
+  }
+]

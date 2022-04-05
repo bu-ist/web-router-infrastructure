@@ -1,3 +1,10 @@
+## Procedure for building the core infrastructure
+
+This repo contains the AWS Infrastructure configuration for the BU WebRouter service.  It is largely CloudFormation.
+
+The SOP for setting up Custom Domains can be found at: https://developer.bu.edu/webteam/custom-web-domains/
+
+
 ## Building a Cloudfront virtual host
 
 Once we create a CloudFront distribution we do not want to have to change it if at all posible. To make that

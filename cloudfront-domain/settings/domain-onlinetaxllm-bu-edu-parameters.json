@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "Alias",
+    "ParameterValue": "onlinetaxllm.bu.edu"
+  },
+  {
+    "ParameterKey": "SSLCertificateID",
+    "ParameterValue": "be4200b9-8b8d-4663-b14c-dc3c5c168546"
+  }
+]
