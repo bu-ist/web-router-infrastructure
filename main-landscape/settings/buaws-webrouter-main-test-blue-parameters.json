@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "Prefix",
-    "ParameterValue": "buaws-webrouter-test"
+    "ParameterValue": "buaws-webrouter-test-blue"
   },
   {
     "ParameterKey": "VpcPrefix",

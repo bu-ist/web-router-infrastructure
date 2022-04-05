@@ -1,47 +1,39 @@
 [
   {
     "ParameterKey": "Prefix",
-    "ParameterValue": "buaws-webrouter-qa"
+    "ParameterValue": "buaws-webrouter-prod-blue"
   },
   {
     "ParameterKey": "VpcPrefix",
-    "ParameterValue": "buaws-web2cloud-nonprod"
+    "ParameterValue": "buaws-websites-prod"
   },
   {
     "ParameterKey": "Landscape",
-    "ParameterValue": "qa"
+    "ParameterValue": "prod"
   },
   {
     "ParameterKey": "TemplateBucket",
-    "ParameterValue": "https://s3.amazonaws.com/buaws-web2cloud-nonprod-us-east-1"
+    "ParameterValue": "https://s3.amazonaws.com/buaws-websites-prod-us-east-1"
   },
   {
     "ParameterKey": "TemplatePath",
-    "ParameterValue": "qa"
-  },
-  {
-    "ParameterKey": "HostedZoneId",
-    "ParameterValue": "Z0022698234MMVVFBQQN3"
-  },
-  {
-    "ParameterKey": "HostedZoneName",
-    "ParameterValue": "webrouter-nprd.aws-cloud.bu.edu"
+    "ParameterValue": "prod"
   },
   {
     "ParameterKey": "PublicAlbAcmCertificate",
-    "ParameterValue": ""
+    "ParameterValue": "arn:aws:acm:us-east-1:502886588882:certificate/42559eeb-7c2d-40c9-afe3-e0feb12a81e6"
   },
   {
     "ParameterKey": "KeyName",
-    "ParameterValue": "chefdeveloper"
+    "ParameterValue": "buaws-websites-prod-2"
   },
   {
     "ParameterKey": "GitHubRepo",
-    "ParameterValue": "web-router-nonprod"
+    "ParameterValue": "web-router-prod"
   },
   {
     "ParameterKey": "GitHubBranch",
-    "ParameterValue": "qa"
+    "ParameterValue": "prod"
   },
   {
     "ParameterKey": "GitHubUser",
@@ -53,18 +45,30 @@
   },
   {
     "ParameterKey": "DesiredServiceCapacity",
-    "ParameterValue": "2"
+    "ParameterValue": "6"
+  },
+  {
+    "ParameterKey": "MinServiceCapacity",
+    "ParameterValue": "6"
   },
   {
     "ParameterKey": "MaxServiceCapacity",
-    "ParameterValue": "20"
+    "ParameterValue": "30"
   },
   {
     "ParameterKey": "DesiredCapacity",
-    "ParameterValue": "1"
+    "ParameterValue": "2"
+  },
+  {
+    "ParameterKey": "MinSize",
+    "ParameterValue": "2"
   },
   {
     "ParameterKey": "MaxSize",
     "ParameterValue": "8"
+  },
+ {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "m5.large"
   }
 ]

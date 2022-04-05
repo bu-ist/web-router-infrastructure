@@ -1,0 +1,14 @@
+[
+        {
+          "ParameterKey":  "HostedZoneDomain",
+          "ParameterValue": "app-prd.aws-cloud.bu.edu"
+        },
+        {
+          "ParameterKey": "HostedZoneComment",
+          "ParameterValue": "General DNS zone for all services and applications in Prod."
+        },
+        {
+          "ParameterKey": "Landscape",
+          "ParameterValue": "prod"
+        }
+]

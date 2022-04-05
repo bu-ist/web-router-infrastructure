@@ -1,0 +1,10 @@
+ [
+        {        
+          "ParameterKey":  "HostedZoneId"
+          "ParameterValue": "/hostedzone/Z04008281BQQEV1NSKIBF"
+        },
+        {
+          "ParameterKey":  "HostedZoneDomain"
+          "ParameterValue": "app-nprd.aws-cloud.bu.edu."
+        }
+ ]

@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "Prefix",
-    "ParameterValue": "buaws-webrouter-test"
+    "ParameterValue": "buaws-webrouter-syst-blue"
   },
   {
     "ParameterKey": "VpcPrefix",
@@ -9,11 +9,7 @@
   },
   {
     "ParameterKey": "Landscape",
-    "ParameterValue": "test"
-  },
-  {
-    "ParameterKey": "InstanceType",
-    "ParameterValue": "m4.large"
+    "ParameterValue": "syst"
   },
   {
     "ParameterKey": "TemplateBucket",
@@ -21,7 +17,7 @@
   },
   {
     "ParameterKey": "TemplatePath",
-    "ParameterValue": "test"
+    "ParameterValue": "syst"
   },
   {
     "ParameterKey": "HostedZoneId",
@@ -45,7 +41,7 @@
   },
   {
     "ParameterKey": "GitHubBranch",
-    "ParameterValue": "test"
+    "ParameterValue": "syst"
   },
   {
     "ParameterKey": "GitHubUser",
@@ -56,11 +52,23 @@
     "ParameterValue": "da90c81e9d2ca0ec2b1b541329b877ead80981bd"
   },
   {
+    "ParameterKey": "DesiredServiceCapacity",
+    "ParameterValue": "2"
+  },
+  {
+    "ParameterKey": "MaxServiceCapacity",
+    "ParameterValue": "20"
+  },
+  {
     "ParameterKey": "DesiredCapacity",
     "ParameterValue": "1"
   },
   {
     "ParameterKey": "MaxSize",
-    "ParameterValue": "4"
+    "ParameterValue": "8"
+  },
+  {
+    "ParameterKey": "RouterImage",
+    "ParameterValue": "buist/websites-webrouter-base"
   }
 ]

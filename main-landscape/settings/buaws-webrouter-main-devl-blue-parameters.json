@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "Prefix",
-    "ParameterValue": "buaws-webrouter-test"
+    "ParameterValue": "buaws-webrouter-devl-blue"
   },
   {
     "ParameterKey": "VpcPrefix",
@@ -9,11 +9,7 @@
   },
   {
     "ParameterKey": "Landscape",
-    "ParameterValue": "test"
-  },
-  {
-    "ParameterKey": "InstanceType",
-    "ParameterValue": "m4.large"
+    "ParameterValue": "devl"
   },
   {
     "ParameterKey": "TemplateBucket",
@@ -21,19 +17,11 @@
   },
   {
     "ParameterKey": "TemplatePath",
-    "ParameterValue": "test"
-  },
-  {
-    "ParameterKey": "HostedZoneId",
-    "ParameterValue": "Z0022698234MMVVFBQQN3"
-  },
-  {
-    "ParameterKey": "HostedZoneName",
-    "ParameterValue": "webrouter-nprd.aws-cloud.bu.edu"
+    "ParameterValue": "devl"
   },
   {
     "ParameterKey": "PublicAlbAcmCertificate",
-    "ParameterValue": ""
+    "ParameterValue": "arn:aws:acm:us-east-1:347521306307:certificate/63b76bad-f185-4680-a5e4-b78cf8ace3d2"
   },
   {
     "ParameterKey": "KeyName",
@@ -45,7 +33,7 @@
   },
   {
     "ParameterKey": "GitHubBranch",
-    "ParameterValue": "test"
+    "ParameterValue": "devl"
   },
   {
     "ParameterKey": "GitHubUser",
@@ -61,6 +49,6 @@
   },
   {
     "ParameterKey": "MaxSize",
-    "ParameterValue": "4"
+    "ParameterValue": "1"
   }
 ]

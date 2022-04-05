@@ -1,0 +1,35 @@
+---
+
+template_bucket: "buaws-websites-prod-us-east-1"
+template_path: "prod"
+
+VpcPrefix: "buaws-websites-prod"
+
+HostedZoneId: "Z10323963VM5EBHR1LN4Q"
+HostedZoneName: "webrouter-prd.aws-cloud.bu.edu"
+
+GitHubRepo: "webrouter-prod"
+GitHubUser: "bu-ist"
+GitHubToken: 'resolve:secretsmanager:GitHubTokenSecret/WebRouter:SecretString:token'
+
+# These variables are for the WebRouter ECS service definition
+DesiredServiceCapacity: 6
+MaxServiceCapacity: 30
+
+# These parameters are for the EC2 instances that run the ECS cluster
+InstanceType: m5.large
+DesiredCapacity: 2
+MinSize: 2
+MaxSize: 8
+
+# These parameters are largely for CloudFront distributions
+# that use this landscape
+# (issue- WAF and logbucket come from landscape so we 
+# need to keep the old style base&iam stacks around
+# until we rebuild WAF)
+#
+# Uncomment and update if we start using this variable file for CloudFront distributions
+# LogBucket: "buaws-webrouter-base-syst-logbucket-7d3thxkupm79.s3.amazonaws.com"
+# LogPrefix: "cf-logs"
+# RedirectToHttps: "false"
+# WebACL: "203fb8d8-2300-4c2f-ba62-68c8a159ac34"

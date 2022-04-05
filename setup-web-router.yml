@@ -1,0 +1,233 @@
+---
+# The main ansible variables are:
+# landscape (syst, devl, qa, test, prod) - landscape that we want to build
+# color (blue, green) - name for the stack we want to build (should be less than 6-7 characters)
+#
+# These parameters can be done on the command line like:
+#
+# ansible-playbook -e landscape=syst -e color=cyan 
+#
+# This playbook is split into 3 different sections:
+# 1. Initial steps (sync S3, ensure base and iam stacks up to date)
+# 2. First run check to see if the main stack is up to date
+# 3. If the ECR does not have an image then wait for the CodePipeline
+#    to build one and then check the stack again.
+# 
+# We based our ECS CodeDeploy version on a quick reference.  It used a vanilla Amazon container as part of the service
+# definition to get the initial version up.  However, this has the following issue.  If you do an update stack with that
+# version it will try to revert to the initial version and the health check for the ALB will fail.  This then causes
+# the stack to say it should rollback to the previous version which also has the initial version.  Eventually this will
+# fail.
+
+# We solve that problem by making the CodePipeline update both the versioned image (tag based on GIT hash) and the "latest"
+# tag in the ECR.  Then we make the CloudFormation reference the latest tag in the repo.  This means that
+# CloudFormation service updates will roll back to the latest version in the ECR.  
+#
+- name: Ensure that a web router is up-to-date
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+
+    # if you need a different profile then add -e profile to the configuration
+    # not currently using
+    #profile: default
+
+    # if you need a different region then add -e region to the command line (or Ansible Tower run)
+    region: us-east-1
+
+  tasks:
+
+    - name: Load the landscape specific variables
+      tags:
+        - wait_for_codepipeline
+      include_vars: "{{ item }}"
+      with_first_found:
+        - "vars/webrouter-{{ landscape }}-{{ color }}.yml"
+        - "vars/webrouter-{{ landscape }}.yml"
+
+    - name: Set facts based on landscape specific variables
+      tags:
+        - wait_for_codepipeline
+      set_fact:
+        landcolor: "{{ landscape }}-{{ color }}"
+        Prefix: "webrouter-{{ landscape }}-{{ color }}"
+        base_stack_name: "webrouter-base-{{ landscape }}-{{ color }}"
+
+    # ##########################################################################
+    # 1. Initial steps (sync S3, ensure base and iam stacks up to date)
+    #
+    - name: Ensure that the CloudFormation templates in S3 are up to date
+      tags:
+        - s3only
+      community.aws.s3_sync:
+        bucket: "{{ template_bucket }}"
+        region: "{{ region }}"
+        file_root: templates
+        key_prefix: "{{ template_path }}"
+
+    - name: "Ensure base stack up to date"
+      tags:
+        - base
+      register: base_stack
+      amazon.aws.cloudformation:
+        stack_name: "{{ base_stack_name }}"
+        region: "{{ region }}"
+        # region: "{{ region }}"
+        state: present
+        template: "base-landscape/main.yaml"
+        template_parameters:
+          Prefix: "{{ Prefix }}"
+
+    - name: "Get the ECR name from the stack output"
+      tags:
+        - wait_for_codepipeline
+      amazon.aws.cloudformation_info:
+        stack_name: "{{ base_stack_name }}"
+        region: "{{ region }}"
+      register: base_info
+      changed_when: base_stack_name in base_info.cloudformation
+
+    - name: "Set variables based on the output"
+      tags:
+        - wait_for_codepipeline
+      when: base_info.changed
+      set_fact:
+        ecr_name: "{{ base_info.cloudformation[ base_stack_name ].stack_outputs.Repository }}"
+
+    - name: "Ensure iam stack up to date"
+      tags:
+        - iam
+      amazon.aws.cloudformation:
+        stack_name: "webrouter-iam-{{ landcolor }}"
+        region: "{{ region }}"
+        state: present
+        template: "iam-landscape/main.yaml"
+        template_parameters:
+          Prefix: "{{ Prefix }}"
+          VpcPrefix: "{{ VpcPrefix }}"
+        capabilities:
+          - CAPABILITY_IAM
+
+    # ##########################################################################
+    # 2. First run check to see if the main stack is up to date
+    #
+    - name: "Changed when the ECR is empty"
+      when: ecr_name is defined
+      command: "aws --region {{ region }} ecr list-images --query imageIds --repository-name {{ ecr_name }}"
+      check_mode: false
+      register: ecr_list_output
+      changed_when: ecr_list_output.stdout == '[]'
+
+    - name: "If ECR is empty then set the docker image"
+      when:
+        - ecr_name is defined
+        - ecr_list_output.changed
+      set_fact:
+        RouterImage: "buist/websites-webrouter-base"
+
+    - name: "Ensure main stack up to date"
+      tags:
+        - main
+      register: main_update
+      amazon.aws.cloudformation:
+        stack_name: "webrouter-main-{{ landcolor }}"
+        region: "{{ region }}"
+        state: present
+        template: "main-landscape/main.yaml"
+        template_parameters:
+          Prefix: "{{ Prefix }}"
+          VpcPrefix: "{{ VpcPrefix }}"
+          Landscape: "{{ landscape }}"
+          TemplateBucket: "https://s3.amazonaws.com/{{ template_bucket }}"
+          TemplatePath: "{{ landscape }}"
+          HostedZoneId: "{{ HostedZoneId }}"
+          HostedZoneName: "{{ HostedZoneName }} "
+          PublicAlbAcmCertificate: ""
+          KeyName: "chefdeveloper"
+          GitHubRepo: "{{ GitHubRepo }} "
+          GitHubBranch: "{{ landscape }}"
+          GitHubUser: "{{ GitHubUser }}"
+          # this weird escaping is necessary because the token contains {{
+          GitHubToken: "{{ '{{' + GitHubToken + '}}' }}"
+          DesiredServiceCapacity: "{{ DesiredServiceCapacity }}"
+          MaxServiceCapacity: "{{ MaxServiceCapacity }}"
+          # EC2 instance parameters
+          InstanceType: "{{ InstanceType }}"
+          DesiredCapacity: "{{ DesiredCapacity }}"
+          MinSize: "{{ MinSize }}"
+          MaxSize: "{{ MaxSize }}"
+          UseLegacyNames: 'false'
+          RouterImage: "{{ RouterImage |default('') }}"
+
+    # - name: Debug CFUpdate
+    #   debug:
+    #     var: "main_update"
+
+    - name: Output the change set info if in check mode
+      when: ansible_check_mode
+      tags:
+        - cfonly
+      debug:
+        var: main_update.meta
+
+    # ##########################################################################
+    # 3. If the ECR does not have an image then wait for the CodePipeline
+    #    to build one and then check the stack again.
+    #
+    - name: Only do the second pass if we needed to set the initial RouterImage
+      when: RouterImage is defined or ecr_name is not defined
+      block:
+
+        - name: Wait for the CodePipeline to build the first image
+          tags:
+            - wait_for_codepipeline
+          when: ecr_name is defined
+          command: "aws --region {{ region }} ecr list-images --query imageIds --repository-name {{ ecr_name }}"
+          # check_mode: false
+          register: wait_for_codepipeline
+          until: wait_for_codepipeline is defined and wait_for_codepipeline.stdout != '[]'
+          changed_when: wait_for_codepipeline.stdout != '[]'
+          retries: 15
+          delay: 30
+
+        # - name: Debug result of waiting
+        #   tags:
+        #     - wait_for_codepipeline
+        #   debug:
+        #     var: wait_for_codepipeline
+
+        - name: "Update main stack to use the ECR images"
+          # the when is used to make certain we don't accidentally do the second
+          # update unless the ecr contains an image
+          when: wait_for_codepipeline.changed
+          register: main_2nd_update
+          amazon.aws.cloudformation:
+            stack_name: "webrouter-main-{{ landcolor }}"
+            region: "{{ region }}"
+            state: present
+            template: "main-landscape/main.yaml"
+            template_parameters:
+              Prefix: "{{ Prefix }}"
+              VpcPrefix: "{{ VpcPrefix }}"
+              Landscape: "{{ landscape }}"
+              TemplateBucket: "https://s3.amazonaws.com/{{ template_bucket }}"
+              TemplatePath: "{{ landscape }}"
+              HostedZoneId: "{{ HostedZoneId }}"
+              HostedZoneName: "{{ HostedZoneName }} "
+              PublicAlbAcmCertificate: ""
+              KeyName: "chefdeveloper"
+              GitHubRepo: "{{ GitHubRepo }} "
+              GitHubBranch: "{{ landscape }}"
+              GitHubUser: "{{ GitHubUser }}"
+              # this weird escaping is necessary because the token contains {{
+              GitHubToken: "{{ '{{' + GitHubToken + '}}' }}"
+              DesiredServiceCapacity: "{{ DesiredServiceCapacity }}"
+              MaxServiceCapacity: "{{ MaxServiceCapacity }}"
+              # EC2 instance parameters
+              InstanceType: "{{ InstanceType }}"
+              DesiredCapacity: "{{ DesiredCapacity }}"
+              MinSize: "{{ MinSize }}"
+              MaxSize: "{{ MaxSize }}"
+              UseLegacyNames: 'false'

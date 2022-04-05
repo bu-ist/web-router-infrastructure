@@ -16,6 +16,22 @@ Parameters:
   DockerImage:
     Type: String
     Default: "bufe-buedu"
+  UseLegacyNames:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Choose either true or false
+    Default: true
+    Description: "If true then we will use legacy names for resources"
+    Type: String
+  HostedZoneId:
+    Description: "The Route53 Hosted Zone id.  If present then this will create a Route53 record pointing to the ALB along with an Amazon managed certificate"
+    Type: String
+    Default: ""
+  HostedZoneName:
+    Description: "The Route53 Hosted Zone name.  This will be used for building the domain names."
+    Type: String
+    Default: ""
   PublicAlbAcmCertificate:
     #AllowedPattern: ^$|(arn:aws:acm:)([a-z0-9/:-])*([a-z0-9])$
     Description: '[ Optional ] The AWS Certification Manager certificate ARN for the ALB certificate - this certificate should be created in the region you wish to run the ALB and must reference the WordPress domain name you use below.'
@@ -64,6 +80,13 @@ Conditions:
     !Not [!Equals [ '', !Ref PublicAlbAcmCertificate ] ]
   NotSslCertificate:
     !Equals [ '', !Ref 'PublicAlbAcmCertificate' ]
+  IsHostedZone:
+    !Not [ !Equals [ '', !Ref HostedZoneId ] ]
+  DoPort443: !Or
+    - !Condition SslCertificate
+    - !Condition IsHostedZone
+  UseLegacyNames:
+    !Equals [ "true", !Ref 'UseLegacyNames' ]
 Mappings:
   # The location for this info is:
   # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI_launch_latest.html
@@ -79,6 +102,35 @@ Mappings:
       #AMIID: ami-7abc111a
       AMIID: ami-decc7fa6
 Resources:
+  LBCertificate:
+    Condition: IsHostedZone
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "${Prefix}.${HostedZoneName}"
+      DomainValidationOptions:
+      - DomainName: !Sub "${Prefix}.${HostedZoneName}"
+        HostedZoneId: !Ref HostedZoneId
+      Tags:
+        - Key: Name
+          Value: !Sub "${Prefix}.${HostedZoneName}"
+        - Key: Service
+          Value: websites
+        - Key: Function
+          Value: webrouter
+        - Key: Landscape
+          Value: !Ref 'Landscape'
+      ValidationMethod: DNS
+  DomainRecordSet:
+   Condition: IsHostedZone
+   Type: 'AWS::Route53::RecordSet'
+   Properties:
+    Comment: !Sub "WebRouter ALB: ${Prefix}.${HostedZoneName}"
+    HostedZoneId: !Ref HostedZoneId
+    Name: !Sub "${Prefix}.${HostedZoneName}."
+    ResourceRecords:
+      - !GetAtt WebRouterALB.DNSName
+    Type: CNAME
+    TTL: 300
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -91,22 +143,28 @@ Resources:
   WebRouterALB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub "${Prefix}-alb"
+      Name: !If
+        - UseLegacyNames
+        - !Sub "${Landscape}-webrouter-alb"
+        - !Sub "${Prefix}-alb"
       Scheme: internet-facing
       LoadBalancerAttributes:
       - Key: idle_timeout.timeout_seconds
         Value: !Ref IdleTimeoutForLB
-      Subnets: 
+      Subnets:
         - "Fn::ImportValue": !Sub "${VpcPrefix}-PublicSubnet1ID"
         - "Fn::ImportValue": !Sub "${VpcPrefix}-PublicSubnet2ID"
-      SecurityGroups: 
-      - "Fn::ImportValue": !Sub "${Prefix}-loadbalancer-sg"  
+      SecurityGroups:
+      - "Fn::ImportValue": !Sub "${Prefix}-loadbalancer-sg"
   WebRouterListener443:
-    Condition: SslCertificate
+    Condition: DoPort443
     Type : AWS::ElasticLoadBalancingV2::Listener
     Properties:
       Certificates:
-      - CertificateArn: !Ref PublicAlbAcmCertificate
+      - CertificateArn: !If
+        - SslCertificate
+        - !Ref PublicAlbAcmCertificate
+        - !Ref LBCertificate
       DefaultActions:
       - Type: forward
         TargetGroupArn: !Ref WebRouterTG443
@@ -114,7 +172,7 @@ Resources:
       Port: 443
       Protocol: HTTPS
   WebRouterListener443Rule:
-    Condition: SslCertificate
+    Condition: DoPort443
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     DependsOn: WebRouterListener80
     Properties:
@@ -156,14 +214,17 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
-      Name: !Sub "${Prefix}-p80-tg"
+      Name: !If
+        - UseLegacyNames
+        - !Sub "${Landscape}-webrouter-p80-tg"
+        - !Sub "${Prefix}-p80-tg"
       Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 2
       VpcId:
         "Fn::ImportValue": !Sub "${VpcPrefix}-VPCID"
   WebRouterTG443:
-    Condition: SslCertificate
+    Condition: DoPort443
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: WebRouterALB
     Properties:
@@ -172,17 +233,20 @@ Resources:
       HealthCheckProtocol: HTTPS
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
-      Name: !Sub "${Prefix}-p443-tg"
+      Name: !If
+        - UseLegacyNames
+        - !Sub "${Landscape}-webrouter-p443-tg"
+        - !Sub "${Prefix}-p443-tg"
       Port: 443
       Protocol: HTTPS
       UnhealthyThresholdCount: 2
-      VpcId: 
+      VpcId:
         "Fn::ImportValue": !Sub "${VpcPrefix}-VPCID"
 
   ECSAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      VPCZoneIdentifier: 
+      VPCZoneIdentifier:
         - "Fn::ImportValue": !Sub "${VpcPrefix}-FrontEndSubnet1AID"
         - "Fn::ImportValue": !Sub "${VpcPrefix}-FrontEndSubnet2AID"
       LaunchConfigurationName: !Ref 'ContainerInstances'
@@ -207,11 +271,11 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
-      SecurityGroups: 
-      - "Fn::ImportValue":  !Sub "${Prefix}-containers-sg" 
+      SecurityGroups:
+      - "Fn::ImportValue":  !Sub "${Prefix}-containers-sg"
       InstanceType: !Ref 'InstanceType'
-      IamInstanceProfile: 
-        "Fn::ImportValue":  !Sub "${Prefix}-instance-profile" 
+      IamInstanceProfile:
+        "Fn::ImportValue":  !Sub "${Prefix}-instance-profile"
       KeyName: !Ref 'KeyName'
       UserData:
         Fn::Base64: !Sub |
@@ -248,7 +312,7 @@ Resources:
       AlarmActions: [ !Ref "CPUScaleUpPolicy" ]
       AlarmDescription: "Alarm if CPU too high or metric disappears"
       ComparisonOperator: GreaterThanThreshold
-      Dimensions: 
+      Dimensions:
         - Name: ClusterName
           Value: !Ref "ECSCluster"
       EvaluationPeriods: 1
@@ -267,7 +331,7 @@ Resources:
       AlarmActions: [ !Ref "CPUScaleDownPolicy" ]
       AlarmDescription: "CPU utilization has dropped below scale-in threshold for more than 3 minutes"
       ComparisonOperator: LessThanOrEqualToThreshold
-      Dimensions: 
+      Dimensions:
         - Name: ClusterName
           Value: !Ref "ECSCluster"
       EvaluationPeriods: 3
@@ -284,8 +348,8 @@ Resources:
  #     MaxCapacity: 2
  #     MinCapacity: 1
  #     ResourceId: !Join ['', [service/, !Ref 'ECSCluster', /, !GetAtt [service, Name]]]
- #     RoleARN: 
- #       "Fn::ImportValue": !Sub "${Prefix}-autoscaling-role-arn" 
+ #     RoleARN:
+ #       "Fn::ImportValue": !Sub "${Prefix}-autoscaling-role-arn"
  #     ScalableDimension: ecs:service:DesiredCount
  #     ServiceNamespace: ecs
  # ServiceScalingPolicy:
@@ -327,13 +391,21 @@ Outputs:
       Name: !Sub "${Prefix}-test-logs-group"
   IsSSL:
     Value: !If
-      - SslCertificate
+      - DoPort443
       - 'true'
       - 'false'
     Export:
       Name: !Sub "${Prefix}-is-targetgroup443"
+  AlbCertificateArn:
+    Condition: DoPort443
+    Value: !If
+      - SslCertificate
+      - !Ref PublicAlbAcmCertificate
+      - !Ref LBCertificate
+    Export:
+      Name: !Sub "${Prefix}-alb-certificate-arn"
   Port443TargetGroup:
-    Condition: SslCertificate
+    Condition: DoPort443
     Value: !Ref WebRouterTG443
     Export:
       Name: !Sub "${Prefix}-targetgroup443-arn"
@@ -342,6 +414,9 @@ Outputs:
     Export:
       Name: !Sub "${Prefix}-targetgroup80-arn"
   WebRouterALBDNS:
-    Value: !GetAtt [ WebRouterALB, DNSName]
+    Value: !If
+      - IsHostedZone
+      - !Ref DomainRecordSet
+      - !GetAtt [ WebRouterALB, DNSName]
     Export:
       Name: !Sub "${Prefix}-buedu-alb-dnsname"
