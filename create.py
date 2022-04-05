@@ -97,9 +97,9 @@ args = parser.parse_args()
 
 JSONfile = args.JSONfile[0]
 profile = args.profile
-if profile == 'default'
+if profile == 'default':
     profile = ''
-else
+else:
     profile = '--profile ' + profile
 
 if command != 'delete-stack':
