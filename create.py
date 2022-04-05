@@ -153,7 +153,7 @@ else:
     iam = "--capabilities CAPABILITY_IAM"
 
 if command != 'delete-stack':
-    cmdstring = "aws cloudformation {} --region {} --stack-name {} --template-body file://{} --parameters file://{} {} {}".format(
+    cmdstring = "aws cloudformation {} {} --region {} --stack-name {} --template-body file://{} --parameters file://{} {} {}".format(
         command,
         profile,
         region,
@@ -164,7 +164,7 @@ if command != 'delete-stack':
         extra
     )
 else:
-    cmdstring = "aws cloudformation {} --region {} --stack-name {} {} {}".format(
+    cmdstring = "aws cloudformation {} {} --region {} --stack-name {} {} {}".format(
         command,
         profile,
         region,
@@ -173,7 +173,7 @@ else:
         extra
     )
 
-waitstring = "aws cloudformation wait {} --region {} --stack-name {}".format(
+waitstring = "aws cloudformation wait {} {} --region {} --stack-name {}".format(
     wait_command,
     profile,
     region,
