@@ -33,3 +33,6 @@ MaxSize: 8
 # LogPrefix: "cf-logs"
 # RedirectToHttps: "false"
 # WebACL: "203fb8d8-2300-4c2f-ba62-68c8a159ac34"
+
+# This is the EC2 keypair to be associated with our newly created instances
+KeyName: 'buaws-websites-prod-2'
