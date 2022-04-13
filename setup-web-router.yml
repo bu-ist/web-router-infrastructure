@@ -145,7 +145,7 @@
           HostedZoneId: "{{ HostedZoneId }}"
           HostedZoneName: "{{ HostedZoneName }} "
           PublicAlbAcmCertificate: ""
-          KeyName: "chefdeveloper"
+          KeyName: "{{ KeyName }}"
           GitHubRepo: "{{ GitHubRepo }} "
           GitHubBranch: "{{ landscape }}"
           GitHubUser: "{{ GitHubUser }}"
