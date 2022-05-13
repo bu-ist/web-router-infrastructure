@@ -4,7 +4,7 @@ Parameters:
     Type: String
     Default: ""
     Description: "Alias of the server which must be unique in CloudFront - use a comma separated list to get more than one"
-    AllowedPattern: ^$|^[a-z0-9\-\.\,]+$
+    AllowedPattern: ^$|^[\*a-z0-9\-\.\,]+$
   WebACL:
     Type: String
     Default: "94bea0cd-5b90-401f-8e9d-de45a7b893ee"
