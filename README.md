@@ -106,13 +106,13 @@ We store the GitHub token as a secret in the AWS Secrets Manager.  There is one 
 if the secret is present by not getting an error when you do the following command:
 
 ```bash
-$ aws --profile x secretsmanager get-secret-value --secret-id websites-webrouter/dockerhub-credentials --query SecretString
+$ aws --profile x secretsmanager get-secret-value --secret-id GitHubTokenSecret/WebRouter --query SecretString
 aws --profile websites-prod secretsmanager get-secret-value  --secret-id  websites-webrouter-dockerhub-secret --query SecretString
 
 An error occurred (ResourceNotFoundException) when calling the GetSecretValue operation: Secrets Manager can't find the specified secret.
 ```
 
-You can create a secret by creating a JSON file similar to `sample-secret.json` and doing the following command:
+You can create a secret by creating a JSON file similar to `github-token.json` and doing the following command:
 
 ```bash
 $ aws --profile x secretsmanager create-secret --name GitHubTokenSecret/WebRouter --secret-string file://github-token.json
