@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "RoutingOriginDNS",
-    "ParameterValue": "webrouter-test.webrouter-nprd.aws-cloud.bu.edu"
+    "ParameterValue": "webrouter-test-teal.webrouter-nprd.aws-cloud.bu.edu"
   },
   {
     "ParameterKey": "SSLCertificateArn",

@@ -9,7 +9,7 @@
   },
 	{
 		"ParameterKey": "RoutingOriginDNS",
-		"ParameterValue": "devl-webrouter-921220843.us-east-1.elb.amazonaws.com"
+		"ParameterValue": "webrouter-devl-teal.webrouter-nprd.aws-cloud.bu.edu"
 	},
 	{
 		"ParameterKey": "LogBucket",

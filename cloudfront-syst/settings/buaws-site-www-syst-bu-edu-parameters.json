@@ -9,7 +9,7 @@
   },
   {
     "ParameterKey": "RoutingOriginDNS",
-    "ParameterValue": "webrouter-syst.webrouter-nprd.aws-cloud.bu.edu"
+    "ParameterValue": "webrouter-syst-teal.webrouter-nprd.aws-cloud.bu.edu"
   },
   {
     "ParameterKey": "SSLCertificateArn",
