@@ -7,8 +7,16 @@
     "ParameterKey": "RoutingOriginDNS",
     "ParameterValue": "webrouter-test-teal.webrouter-nprd.aws-cloud.bu.edu"
   },
+	{
+		"ParameterKey": "WebACL",
+		"ParameterValue": "c71c889e-8f3e-42e9-9daa-941cc18301fb"
+	},
   {
     "ParameterKey": "SSLCertificateArn",
     "ParameterValue": "arn:aws:acm:us-east-1:347521306307:certificate/6cc51864-7023-480c-a7be-6c3570cdafbf"
-  }
+  },
+	{
+		"ParameterKey": "LogBucket",
+		"ParameterValue": "buaws-webrouter-base-test-logbucket-mlw82sxb5w7r.s3.amazonaws.com"
+	}
 ]

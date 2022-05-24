@@ -10,5 +10,13 @@
   {
     "ParameterKey": "SSLCertificateArn",
     "ParameterValue": "arn:aws:acm:us-east-1:347521306307:certificate/51016422-615f-4e1e-a8e9-f82843b17fe3"
-  }
+  },
+	{
+		"ParameterKey": "LogBucket",
+		"ParameterValue": "buaws-webrouter-base-qa-logbucket-18c7ohvzgrfed.s3.amazonaws.com"
+	},
+	{
+		"ParameterKey": "WebACL",
+		"ParameterValue": "b3e1d8ff-8d2c-4991-8290-0de7f6fe5224"
+	}
 ]
