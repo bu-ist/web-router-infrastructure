@@ -4,7 +4,7 @@
     "ParameterValue": "webmail.bu.edu"
   },
   {
-    "ParameterKey": "SSLCertificateArn",
-    "ParameterValue": "arn:aws:acm:us-east-1:502886588882:certificate/4787f6bc-5777-4288-a061-f9a3aafd6f50"
+    "ParameterKey": "SSLCertificateID",
+    "ParameterValue": "4787f6bc-5777-4288-a061-f9a3aafd6f50"
   }
 ]
