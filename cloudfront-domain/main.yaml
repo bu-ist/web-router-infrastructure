@@ -112,7 +112,7 @@ Resources:
         WebACLId: !If
           - WebACLSetCondition
           - !Ref 'WebACL'
-          - !Ref "AWS::NoValue"
+          - !Ref 'AWS::NoValue'
 Outputs:
   CloudFrontARN:
     Value: !Ref CloudFrontDistribution

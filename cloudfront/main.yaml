@@ -8,11 +8,11 @@ Parameters:
   WebACL:
     Type: String
     Default: ""
-    Description: "WebACL to set for this CloudFront distribution"
+    Description: "WebACL to set for this CloudFront distribution (default is production WebACL; empty string indicates no-WebACL)"
     AllowedPattern: ^$|^[0-9a-f\-]+$
   RoutingOriginDNS:
     Type: String
-    Description: 'DNS name for the front-end routing ALB'
+    Description: 'DNS name for the front-end routing ALB (default is production value)'
     Default: "test"
   SSLCertificateArn:
     #AllowedPattern: ^$|(arn:aws:acm:)([a-z0-9/:-])*([a-z0-9])$
@@ -26,7 +26,7 @@ Parameters:
     Default: "cf-logs/"
   LogBucket:
     #AllowedPattern: ^$|(arn:aws:acm:)([a-z0-9/:-])*([a-z0-9])$
-    Description: 'S3 log bucket for our output'
+    Description: 'S3 log bucket for our output (default is production value; empty string indicates no logging)'
     Type: String
     Default: ""
 
