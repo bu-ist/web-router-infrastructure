@@ -38,6 +38,7 @@ Resources:
           ForwardedValues:
             QueryString: true
             Headers:
+              - Authorization
               - Host
               - Referer
               - User-Agent
