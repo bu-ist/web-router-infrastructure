@@ -5,6 +5,6 @@
   },
   {
     "ParameterKey": "SSLCertificateID",
-    "ParameterValue": "arn:aws:acm:us-east-1:502886588882:certificate/7d3007a4-3321-4cdc-865d-12987ce059e7"
+    "ParameterValue": "7d3007a4-3321-4cdc-865d-12987ce059e7"
   }
 ]
