@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "Alias",
+    "ParameterValue": "search-test.bu.edu"
+  },
+  {
+    "ParameterKey": "SSLCertificateID",
+    "ParameterValue": "9012f261-44a7-41ff-8d94-16361a549865"
+  },
+	{
+		"ParameterKey": "RoutingOriginDNS",
+		"ParameterValue": "webrouter-test-teal.webrouter-nprd.aws-cloud.bu.edu"
+	},
+	{
+		"ParameterKey": "LogBucket",
+		"ParameterValue": "buaws-webrouter-base-test-logbucket-mlw82sxb5w7r.s3.amazonaws.com"
+	},
+	{
+		"ParameterKey": "WebACL",
+		"ParameterValue": "c71c889e-8f3e-42e9-9daa-941cc18301fb"
+	}
+]
