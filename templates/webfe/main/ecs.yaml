@@ -88,19 +88,18 @@ Conditions:
   UseLegacyNames:
     !Equals [ "true", !Ref 'UseLegacyNames' ]
 Mappings:
-  # The location for this info is:
-  # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI_launch_latest.html
+  # To get latest AMI information:
+  # aws ssm get-parameters --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended --region="us-east-1"
+  # aws ssm get-parameters --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended --region="us-west-2"
+  #
+  # Get the image ID on its own:
+  # aws ssm get-parameters --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended --region="us-east-1" --query "Parameters[0].Value" --output text | jq '.image_id'
   AWSRegionToAMI:
     us-east-1:
-      #AMIID: ami-9eb4b1e5
-      # 2017.03 Image ID
-      #AMIID: ami-0e297018
-      #AMIID: ami-fad25980
-      AMIID: ami-28456852
+      AMIID: ami-05339d597592d45cf
     us-west-2:
-      # DR alternate region
-      #AMIID: ami-7abc111a
-      AMIID: ami-decc7fa6
+      # Alternate Region for Disaster Recovery (DR)
+      AMIID: ami-0be4bf0879ccaadb3
 Resources:
   LBCertificate:
     Condition: IsHostedZone

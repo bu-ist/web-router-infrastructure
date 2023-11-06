@@ -6,5 +6,17 @@
   {
     "ParameterKey": "SSLCertificateID",
     "ParameterValue": "af3c176b-f648-4259-8559-f4cb0ba9bc38"
-  }
+  },
+	{
+		"ParameterKey": "RoutingOriginDNS",
+		"ParameterValue": "webrouter-devl-teal.webrouter-nprd.aws-cloud.bu.edu"
+	},
+	{
+		"ParameterKey": "LogBucket",
+		"ParameterValue": "buaws-webrouter-base-devl-logbucket-l7nj0rqnxuii.s3.amazonaws.com"
+	},
+	{
+		"ParameterKey": "WebACL",
+		"ParameterValue": "2d1be623-11e3-4c42-bf06-164042c2a8f4"
+	}
 ]
