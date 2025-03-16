@@ -1,0 +1,162 @@
+- name: "update-websites-webrouter-waf-v2"
+  hosts: localhost
+  gather_facts: false
+  vars:
+
+    landscapes:
+      sandbox:
+        name: websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEK
+        id: 96f3c0af-9e3d-4212-a87d-1cbb56f244be
+        arn: arn:aws:wafv2:us-east-1:847284185857:global/webacl/websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEK/96f3c0af-9e3d-4212-a87d-1cbb56f244be
+        WhitelistRule: Allow
+        BlacklistRule: Allow
+        ReputationListsRule: Allow
+        BadBotRule: Allow
+        # "AWS-AWSManagedRulesCommonRuleSet",
+        SqlInjectionRule: Allow
+        XssRule: Allow
+        ScannersAndProbesRule: Allow
+        HttpFloodRateBasedRule: Allow
+
+
+      # test:
+      #   name: 
+      #   id: 
+      #   arn: 
+      # prod:
+      #   name: 
+      #   id: 
+      #   arn: 
+
+  tasks:
+
+    - name: Print Selected Landscape Details
+      debug:
+        msg: "Environment: {{ target_env }}, Name: {{ landscapes[target_env].name }}, ID: {{ landscapes[target_env].id }}, ARN: {{ landscapes[target_env].arn }}"
+      when: target_env in landscapes
+
+    - name: "update-websites-webrouter-waf-v2 - collect the WAF config as a json: aws wafv2 get-web-acl --id {{ landscapes[target_env].id }} --name {{ landscapes[target_env].name }} --scope CLOUDFRONT"
+      ansible.builtin.command:
+        argv:
+          - aws
+          - wafv2
+          - get-web-acl
+          - --id
+          - "{{ landscapes[target_env].id }}"
+          - --name
+          - "{{ landscapes[target_env].name }}"
+          - --scope
+          - CLOUDFRONT
+      register: webacl_details
+      when: target_env in landscapes
+
+
+    - name: "Extract json from webacl_details"
+      set_fact:
+        webacl_json: "{{ webacl_details.stdout | trim | replace('\n',' ') | from_json }}"
+
+    - name: "show webacl_json"
+      debug:
+        msg: "{{ webacl_json }}"
+
+    - name: Extract LockToken
+      set_fact:
+        lock_token: "{{ webacl_details.stdout | trim | replace('\n',' ') | from_json | json_query('LockToken') }}"
+
+    - name: Show LockToken
+      debug:
+        msg: "LockToken:  {{ lock_token }}"
+
+    # - name: Adjust WAF rule actions using multiline shell
+    #   ansible.builtin.shell: |
+    #     cat <<EOF | python3 adjust-waf.py \
+    #       -Whitelist {{ landscapes[target_env].WhitelistRule }} \
+    #       -Blacklist {{ landscapes[target_env].BlacklistRule }} \
+    #       -ReputationListsRule {{ landscapes[target_env].ReputationListsRule }} \
+    #       -BadBotRule {{ landscapes[target_env].BadBotRule }} \
+    #       -SqlInjectionRule {{ landscapes[target_env].SqlInjectionRule }} \
+    #       -XssRule {{ landscapes[target_env].XssRule }} \
+    #       -ScannersAndProbesRule {{ landscapes[target_env].ScannersAndProbesRule }} \
+    #       -HttpFloodRateBasedRule {{ landscapes[target_env].HttpFloodRateBasedRule }} 
+    #     {{ webacl_json | to_json | replace("'", "\\'") }}
+    #     EOF
+    #   register: waf_update_result
+
+
+
+    - name: Adjust webacl json
+      ansible.builtin.command: >
+        python3 adjust-waf.py
+        -WhitelistRule "{{ landscapes[target_env].WhitelistRule }}"
+        -BlacklistRule "{{ landscapes[target_env].BlacklistRule }}"
+        -ReputationListsRule "{{ landscapes[target_env].ReputationListsRule }}"
+        -BadBotRule "{{ landscapes[target_env].BadBotRule }}"
+        -SqlInjectionRule "{{ landscapes[target_env].SqlInjectionRule }}"
+        -XssRule "{{ landscapes[target_env].XssRule }}"
+        -ScannersAndProbesRule "{{ landscapes[target_env].ScannersAndProbesRule }}"
+        -HttpFloodRateBasedRule "{{ landscapes[target_env].HttpFloodRateBasedRule }}"
+      args:
+        stdin: "{{ webacl_json | to_json }}"
+      register: waf_update_result
+
+    - name: Display updated WebACL JSON
+      debug:
+        var: waf_update_result.stdout | from_json
+
+    - name: Clean this shit up
+      set_fact:
+        new_waf: "{{ waf_update_result.stdout | from_json }}"
+
+    - name: update webacl
+      ansible.builtin.command: >
+          aws 
+          wafv2
+          update-web-acl
+          --id "{{ landscapes[target_env].id }}"
+          --name "{{ landscapes[target_env].name }}"
+          --scope CLOUDFRONT
+          --default-action '{"Allow": {}}'
+          --rules {{ new_waf  }}
+          --lock-token {{ lock_token }}
+          --visibility-config SampledRequestsEnabled=true,CloudWatchMetricsEnabled=false,MetricName={{ landscapes[target_env].name }}
+      register: update_result
+
+    - name: Display updated WebACL JSON
+      debug:
+        var: waf_update_result.stdout | from_json
+
+# --rules {{ waf_update_result.stdout | trim | replace('\n',' ') | from_json | to_nice_json }}
+# --rules {{ waf_update_result.stdout | trim | replace('\n',' ') | from_json | to_nice_json }}
+
+  #  - name: Update WebACL with new rules
+  #     command: >
+  #       aws wafv2 update-web-acl
+  #       --name {{ webacl_name }}
+  #       --scope REGIONAL
+  #       --id {{ webacl_id }}
+  #       --region {{ aws_region }}
+  #       --default-action '{"Allow": {}}'
+  #       --rules file:///tmp/rules.json
+  #       --lock-token {{ lock_token }}
+  #     register: update_result
+
+
+
+
+
+    # - name: show whitelist
+    #   debug:
+    #     msg: "{{ webacl_details.stdout | trim | replace('\n',' ') | from_json | json_query(WhitelistRule) }}"
+    # WebACL.Rules.Name
+    # WebACL.Rules[*].Name
+
+    # - name: Save WebACL output to JSON file
+    #   copy:
+    #     content: "{{ webacl_details.stdout | trim | replace('\n',' ') | from_json | to_nice_json }}"
+    #     dest: "/tmp/webacl-ansible.json"
+
+
+    # - name: Print waf config in json
+    #   debug:
+    #     msg: #"{{ waf_results }}" #| from_json | to_nice_json }}"
+    #          "{{ waf_results.stdout | trim | replace('\n', ' ') | from_json }}"

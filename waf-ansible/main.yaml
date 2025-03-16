@@ -1,0 +1,291 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+    Calls AWS reference WAF Stack, to make certain that it's deployed.
+Parameters:
+    LogPrefix:
+      Type: String
+      Description: Prefix used to import the ALB log settings
+
+    DeliveryStreamName:
+      Type: String
+      Description: Unique delivery stream Name
+
+    Service:
+      Description: Service catalog name
+      Type: String
+
+    Function:
+      Description: The Function within the Service
+      Type: String
+      Default: "waf"
+
+    Landscape:
+      Description: Environment prod, syst, nonprod, devl or test
+      Type: String
+
+    CostCenter:
+      Type: String
+      Default: "AWS Web to Cloud Front Ends"
+
+    Ticket:
+      Type: String
+
+
+Resources:
+    WAF:
+      Type: 'AWS::CloudFormation::Stack'
+      Properties:
+        TemplateURL: 'https://s3.amazonaws.com/solutions-reference/security-automations-for-aws-waf/latest/aws-waf-security-automations.template'
+                    #'https://s3.amazonaws.com/solutions-reference/aws-waf-security-automations/latest/aws-waf-security-automations.template'
+        Parameters:
+          ActivateAWSManagedRulesParam: 'yes'
+          ActivateHttpFloodProtectionParam: 'yes - AWS WAF rate based rule'
+          ActivateScannersProbesProtectionParam: 'yes - AWS Lambda log parser'
+          AppAccessLogBucket: "websites-webrouter-alb-logs-sandbox-alblogbucket"
+            # "Fn::ImportValue": !Sub "${LogPrefix}-alblogbucket"
+          EndpointType: 'CloudFront'
+          RequestThreshold: 1498
+        Tags:
+          - Key: Name
+            Value: !Sub "${AWS::StackName}"
+          - Key: Service
+            Value: !Ref 'Service'
+          - Key: Function
+            Value: !Ref 'Function'
+          - Key: Landscape
+            Value: !Ref 'Landscape'
+          - Key: CostCenter
+            Value: !Ref 'CostCenter'
+          - Key: Ticket
+            Value: !Ref 'Ticket'
+
+    WafLogBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: !Sub "${AWS::StackName}-data-s3"
+
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+
+        LifecycleConfiguration:
+          Rules:
+          - Status: Enabled
+            Id: MoveToStorage
+            Transitions:
+            - StorageClass: 'STANDARD_IA'
+              TransitionInDays: '31'
+            - StorageClass: 'GLACIER'
+              TransitionInDays: '62'
+            ExpirationInDays: 92
+
+        Tags:
+          - Key: Name
+            Value: !Sub "${AWS::StackName}-data-s3"
+          - Key: Service
+            Value: !Ref 'Service'
+          - Key: Function
+            Value: !Ref 'Function'
+          - Key: Landscape
+            Value: !Ref 'Landscape'
+          - Key: CostCenter
+            Value: !Ref 'CostCenter'
+          - Key: Ticket
+            Value: !Ref 'Ticket'
+      DeletionPolicy: Retain
+        
+    WafLogBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref WafLogBucket
+        PolicyDocument:
+          Statement:
+            - Sid: AllowSSLRequestsOnly
+              Action: s3:*
+              Effect: Deny
+              Resource: 
+                - !GetAtt WafLogBucket.Arn
+                - !Sub "${WafLogBucket.Arn}/*"
+              Condition:
+                Bool:
+                  aws:SecureTransport: 'false'
+              Principal: "*"
+
+    FirehoseWAFLogsDeliveryStreamRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref 'AWS::AccountId'
+        Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:PutObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${WafLogBucket}'
+                  - !Sub 'arn:aws:s3:::${WafLogBucket}/*'
+        - PolicyName: KinesisAccess
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kinesis:DescribeStream
+                  - kinesis:GetShardIterator
+                  - kinesis:GetRecords
+                Resource:
+                  - !Sub 'arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${DeliveryStreamName}'
+        - PolicyName: CloudWatchAccess
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/kinesisfirehose/${DeliveryStreamName}:*'
+        Tags:
+          - Key: Name
+            Value: !Sub "${AWS::StackName}-FirehoseWAFLogsDeliveryStreamRole"
+          - Key: Service
+            Value: !Ref 'Service'
+          - Key: Function
+            Value: !Ref 'Function'
+          - Key: Landscape
+            Value: !Ref 'Landscape'
+          - Key: CostCenter
+            Value: !Ref 'CostCenter'
+          - Key: Ticket
+            Value: !Ref 'Ticket'
+      Metadata:
+        cfn_nag:
+          rules_to_suppress:
+            -
+              id: W11
+              reason: "S3Access restricted to WafLogBucket and CloudWatchAccess to DeliveryStreamName."
+
+  #   FirehoseWAFLogsDeliveryStream:
+  #     Type: AWS::KinesisFirehose::DeliveryStream
+  #     Properties:
+  #       DeliveryStreamName: !Ref DeliveryStreamName
+  #       DeliveryStreamType: DirectPut
+  #       ExtendedS3DestinationConfiguration:
+  #         BucketARN: !GetAtt "WafLogBucket.Arn"
+  #         BufferingHints:
+  #           IntervalInSeconds: 300
+  #           SizeInMBs: 5
+  #         CompressionFormat: GZIP
+  #         Prefix: 'AWSLogs/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/'
+  #         ErrorOutputPrefix: 'AWSErrorLogs/result=!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/'
+  #         RoleARN: !GetAtt FirehoseWAFLogsDeliveryStreamRole.Arn
+  #       Tags:
+  #         - Key: Name
+  #           Value: !Ref DeliveryStreamName
+  #         - Key: Service
+  #           Value: !Ref 'Service'
+  #         - Key: Function
+  #           Value: !Ref 'Function'
+  #         - Key: Landscape
+  #           Value: !Ref 'Landscape'
+  #         - Key: CostCenter
+  #           Value: !Ref 'CostCenter'
+  #         - Key: Ticket
+  #           Value: !Ref 'Ticket'
+
+  #   GlueWafAccessLogsTable:
+  #     Type: AWS::Glue::Table
+  #     Properties:
+  #       DatabaseName: 
+  #         "Fn::ImportValue": !Sub "${LogPrefix}-gluedb"
+  #       CatalogId: !Ref AWS::AccountId
+  #       TableInput:
+  #         Name: waf_access_logs
+  #         Parameters: {"EXTERNAL": "TRUE"}
+  #         # PartitionKeys:
+  #         #   - Name: year
+  #         #     Type: int
+  #         #   - Name: month
+  #         #     Type: int
+  #         #   - Name: day
+  #         #     Type: int
+  #         #   - Name: hour
+  #         #     Type: int
+  #         StorageDescriptor:
+  #           Location:
+  #             Fn::Sub: "s3://${WafLogBucket}/AWSLogs/"
+  # #            Fn::Sub: "s3://${WafLogBucket}/AWSLogs/${AWS::AccountId}/elasticloadbalancing/${AWS::Region}/"
+  #           InputFormat: "org.apache.hadoop.mapred.TextInputFormat"
+  #           OutputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+  #           SerdeInfo:
+  #             Parameters: {
+  #               "paths": "action,formatVersion,httpRequest,httpSourceId,httpSourceName,nonTerminatingMatchingRules,rateBasedRuleList,ruleGroupList,terminatingRuleId,terminatingRuleMatchDetails,terminatingRuleType,timestamp,webaclId"
+  #             }
+  #             SerializationLibrary: "org.openx.data.jsonserde.JsonSerDe"
+  #           Compressed : true
+  #           StoredAsSubDirectories: false
+  #           Columns:
+  #             - Name: timestamp
+  #               Type: bigint
+  #             - Name: formatversion
+  #               Type: int
+  #             - Name: webaclid
+  #               Type: string
+  #             - Name: terminatingruleid
+  #               Type: string
+  #             - Name: terminatingruletype
+  #               Type: string
+  #             - Name: terminatingrulematchdetails
+  #               Type: array<struct<conditiontype:string,location:string,matcheddata:array<string>>>
+  #             - Name: action
+  #               Type: string
+  #             - Name: httpsourcename
+  #               Type: string
+  #             - Name: httpsourceid
+  #               Type: string
+  #             - Name: rulegrouplist
+  #               Type: array<string>
+  #             - Name: ratebasedrulelist
+  #               Type: array<string>
+  #             - Name: nonterminatingmatchingrules
+  #               Type: array<struct<ruleid:string,action:string,rulematchdetails:array<string>>>
+  #             - Name: httprequest
+  #               Type: struct<clientip:string,country:string,headers:array<struct<name:string,value:string>>,uri:string,args:string,httpversion:string,httpmethod:string,requestid:string>
+  #       Tags:
+  #         - Key: Name
+  #           Value: !Sub "${LogPrefix}-gluedb"
+  #         - Key: Service
+  #           Value: !Ref 'Service'
+  #         - Key: Function
+  #           Value: !Ref 'Function'
+  #         - Key: Landscape
+  #           Value: !Ref 'Landscape'
+  #         - Key: CostCenter
+  #           Value: !Ref 'CostCenter'
+  #         - Key: Ticket
+  #           Value: !Ref 'Ticket'
+        
+Outputs:
+  WebACL:
+    Value: !GetAtt WAF.Outputs.WAFWebACL
+    Export:
+      Name: !Sub "${AWS::StackName}-webacl"
+
+  WebACLARN:
+    Value: !GetAtt WAF.Outputs.WAFWebACLArn
+    Export:
+      Name: !Sub "${AWS::StackName}-webacl-arn"
+              
