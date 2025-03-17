@@ -12,7 +12,7 @@
         arn: arn:aws:wafv2:us-east-1:847284185857:global/webacl/websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEK/96f3c0af-9e3d-4212-a87d-1cbb56f244be
         WhitelistRule: Allow
         BlacklistRule: Allow
-        ReputationListsRule: Allow
+        ReputationListsRule: Block
         BadBotRule: Allow
         # "AWS-AWSManagedRulesCommonRuleSet",
         SqlInjectionRule: Allow

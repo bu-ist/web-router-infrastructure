@@ -10,6 +10,11 @@ Parameters:
       Type: String
       Description: Unique delivery stream Name
 
+    EndpointType:
+      Type: String
+      Description: Cloudfront or Regional
+      Default: "CloudFront"
+
     Service:
       Description: Service catalog name
       Type: String
@@ -43,7 +48,7 @@ Resources:
           ActivateScannersProbesProtectionParam: 'yes - AWS Lambda log parser'
           AppAccessLogBucket: "websites-webrouter-alb-logs-sandbox-alblogbucket"
             # "Fn::ImportValue": !Sub "${LogPrefix}-alblogbucket"
-          EndpointType: 'CloudFront'
+          EndpointType: !Ref EndpointType
           RequestThreshold: 1498
         Tags:
           - Key: Name
