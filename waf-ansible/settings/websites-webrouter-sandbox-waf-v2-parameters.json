@@ -1,0 +1,26 @@
+[
+    {
+        "ParameterKey": "LogPrefix",
+        "ParameterValue": "websites-webrouter-alb-logs-sandbox"
+    },
+    {
+        "ParameterKey": "DeliveryStreamName",
+        "ParameterValue": "websites-webrouter-waf-logs-sandbox"
+    },
+    {
+        "ParameterKey": "Service",
+        "ParameterValue": "websites"
+    },
+    {
+        "ParameterKey": "Function",
+        "ParameterValue": "webrouter"
+    },
+    {
+        "ParameterKey": "Landscape",
+        "ParameterValue": "sandbox"
+    },
+    {
+        "ParameterKey":  "Ticket",
+        "ParameterValue": "PRJ0054362"
+    }
+] 
