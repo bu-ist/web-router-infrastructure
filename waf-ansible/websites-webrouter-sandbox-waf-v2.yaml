@@ -1,0 +1,50 @@
+#  awswhoami
+#  . ~/ansible/bin/activate
+#  ansible-playbook websites-webrouter-sandbox-waf-v2.yaml
+- name: modify a webACL
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: modify a webACL
+      community.aws.wafv2_web_acl:
+        name: websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEK
+        description: Custom WAFWebACL - hlc edits
+        scope: CLOUDFRONT
+        default_action: Allow
+        sampled_requests: false
+        cloudwatch_metrics: true
+        # metric_name: test05-acl-metric
+        rules:
+          - name: websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEKWhitelistRule
+            priority: 0
+            action:
+              allow: {}
+            visibility_config:
+              sampled_requests_enabled: true
+              cloud_watch_metrics_enabled: true
+              metric_name: websiteswebroutersandboxwafv2WAFDGSR10BM5BEKWhitelistRule
+            statement:
+              or_statement:
+                statements:
+                  - ip_set_reference_statement:
+                      arn: "arn:aws:wafv2:us-east-1:847284185857:global/ipset/websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEKWhitelistSetIPV4/e6171d6d-4639-4cba-935d-b03819f3aebc"
+                  - ip_set_reference_statement:
+                      arn: "arn:aws:wafv2:us-east-1:847284185857:global/ipset/websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEKWhitelistSetIPV6/243c0b19-5559-454a-b030-9bc0e0e25da0"  
+        #   - name: websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEKBlacklistRule
+        #     priority: 1
+        #     action:
+        #       block: {}
+        #     visibility_config:
+        #         sampled_requests_enabled: true
+        #         cloud_watch_metrics_enabled: true
+        #         metric_name: websiteswebroutersandboxwafv2WAFDGSR10BM5BEKBlacklistRule
+        #     Statement:
+        #       OrStatement:
+        #         Statements:
+        #           - IPSetReferenceStatement:
+        #               ARN: "arn:aws:wafv2:us-east-1:847284185857:global/ipset/websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEKBlacklistSetIPV4/fe719063-97b0-4cbf-9174-1de610b52f94"
+        #           - IPSetReferenceStatement:
+        #               ARN: "arn:aws:wafv2:us-east-1:847284185857:global/ipset/websites-webrouter-sandbox-waf-v2-WAF-DGSR10BM5BEKBlacklistSetIPV6/6b6989ae-68ab-4862-a828-3512b7042fea"
+        purge_rules: false
+        state: present
