@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "Alias",
-    "ParameterValue": "ssl.bu.edu"
+    "ParameterValue": "iss.bu.edu"
   },
   {
     "ParameterKey": "SSLCertificateID",
