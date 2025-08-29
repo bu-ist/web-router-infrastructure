@@ -7,9 +7,8 @@ Parameters:
     AllowedPattern: ^$|^[\*a-z0-9\-\.\,]+$
   WebACL:
     Type: String
-    Default: "94bea0cd-5b90-401f-8e9d-de45a7b893ee"
+    Default: "arn:aws:wafv2:us-east-1:502886588882:global/webacl/websites-security-prod-cyan-waf-WAF-7ZOSIO65G9I6/e4f5fbb7-dfc2-485d-8ac0-3df916268be1"
     Description: "WebACL to set for this CloudFront distribution (default is production WebACL; empty string indicates no-WebACL)"
-    AllowedPattern: ^$|^[0-9a-f\-]+$
   RoutingOriginDNS:
     Type: String
     Description: 'DNS name for the front-end routing ALB (default is production value)'
