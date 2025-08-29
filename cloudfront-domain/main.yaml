@@ -34,7 +34,7 @@ Parameters:
     #AllowedPattern: ^$|(arn:aws:acm:)([a-z0-9/:-])*([a-z0-9])$
     Description: 'S3 log bucket for our output (default is production value; empty string indicates no logging)'
     Type: String
-    Default: "buaws-webrouter-base-prod-logbucket-1elkja1km49z7.s3.amazonaws.com"
+    Default: "websites-security-prod-cyan-waf-cf-access-log-s3.s3.amazonaws.com"
 
 Conditions:
   LogBucketSetCondition: !Not
